@@ -1,0 +1,4 @@
+{"comparison_group_id":"comparison_001","family_id":"authority_profiles","family_label":"Fictional enterprise evidence retrieval","scenario_id":"scenario_001","schema_version":"1.0.0","variant_label":"Public-primary evidence required"}
+{"comparison_group_id":"comparison_001","family_id":"authority_profiles","family_label":"Fictional enterprise evidence retrieval","scenario_id":"scenario_002","schema_version":"1.0.0","variant_label":"Approved-internal evidence required"}
+{"comparison_group_id":null,"family_id":"authority_profiles","family_label":"Fictional enterprise evidence retrieval","scenario_id":"scenario_003","schema_version":"1.0.0","variant_label":"Unsupported authority required"}
+{"comparison_group_id":null,"family_id":"authority_profiles","family_label":"Fictional enterprise evidence retrieval","scenario_id":"scenario_004","schema_version":"1.0.0","variant_label":"Public-primary or approved-internal evidence accepted"}

@@ -1,0 +1,4 @@
+{"cited_clause_ids":["authority.requirement"],"decision":"SELECT","policy_id":"replay_policy_m1","scenario_id":"scenario_001","schema_version":"1.0.0","selected_tool_id":"evidence_tool_02"}
+{"cited_clause_ids":["authority.requirement"],"decision":"SELECT","policy_id":"replay_policy_m1","scenario_id":"scenario_002","schema_version":"1.0.0","selected_tool_id":"evidence_tool_02"}
+{"cited_clause_ids":["authority.requirement"],"decision":"NO_TOOL","policy_id":"replay_policy_m1","scenario_id":"scenario_003","schema_version":"1.0.0","selected_tool_id":null}
+{"cited_clause_ids":["authority.requirement"],"decision":"SELECT","policy_id":"replay_policy_m1","scenario_id":"scenario_004","schema_version":"1.0.0","selected_tool_id":"evidence_tool_01"}

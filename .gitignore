@@ -1,0 +1,39 @@
+# Operating-system files
+.DS_Store
+.AppleDouble
+Thumbs.db
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Packaging output
+build/
+dist/
+*.egg-info/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors and local backups
+.idea/
+.vscode/
+*.swp
+*.bak
+.python-version.bak
+
+# Generated exploratory output; committed goldens live under tests/golden/
+artifacts/
+scratch/
