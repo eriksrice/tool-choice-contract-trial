@@ -20,6 +20,7 @@ TOOL_PROHIBITION_V2 = "tool.prohibition"
 class RelationClauseSpecV2:
     contract_fields: tuple[str, ...]
     manifest_fields: tuple[str, ...]
+    expected_failure_code: str
 
 
 V2_RELATION_CLAUSE_REGISTRY: Mapping[str, RelationClauseSpecV2] = MappingProxyType(
@@ -27,26 +28,32 @@ V2_RELATION_CLAUSE_REGISTRY: Mapping[str, RelationClauseSpecV2] = MappingProxyTy
         CAPABILITY_REQUIREMENT_V2: RelationClauseSpecV2(
             contract_fields=("contract.required_capabilities",),
             manifest_fields=("manifest.capabilities",),
+            expected_failure_code="F_CAPABILITY_MISMATCH",
         ),
         AUTHORITY_REQUIREMENT_V2: RelationClauseSpecV2(
             contract_fields=("contract.accepted_authority_profiles",),
             manifest_fields=("manifest.authority_profiles",),
+            expected_failure_code="F_AUTHORITY_MISMATCH",
         ),
         INPUT_REQUIREMENT_V2: RelationClauseSpecV2(
             contract_fields=("contract.required_input_profiles",),
             manifest_fields=("manifest.accepted_input_profiles",),
+            expected_failure_code="F_INPUT_CONTRACT_MISMATCH",
         ),
         OUTPUT_REQUIREMENT_V2: RelationClauseSpecV2(
             contract_fields=("contract.required_output_profiles",),
             manifest_fields=("manifest.produced_output_profiles",),
+            expected_failure_code="F_OUTPUT_CONTRACT_MISMATCH",
         ),
         OUTPUT_CITATIONS_V2: RelationClauseSpecV2(
             contract_fields=("contract.citations_required",),
             manifest_fields=("manifest.provides_citations",),
+            expected_failure_code="F_OUTPUT_CONTRACT_MISMATCH",
         ),
         TOOL_PROHIBITION_V2: RelationClauseSpecV2(
             contract_fields=("contract.forbidden_tool_ids",),
             manifest_fields=("manifest.tool_id",),
+            expected_failure_code="F_EXPLICIT_PROHIBITION",
         ),
     }
 )
@@ -60,6 +67,7 @@ def v2_relation_registry_hash() -> str:
             "relation_clause_registry_v2": {
                 clause_id: {
                     "contract_fields": spec.contract_fields,
+                    "expected_failure_code": spec.expected_failure_code,
                     "manifest_fields": spec.manifest_fields,
                 }
                 for clause_id, spec in sorted(V2_RELATION_CLAUSE_REGISTRY.items())

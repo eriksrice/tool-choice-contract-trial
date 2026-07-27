@@ -7,7 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from .v2_registry import V2_RELATION_REGISTRY_HASH
+from .v2_registry import V2_RELATION_CLAUSE_REGISTRY, V2_RELATION_REGISTRY_HASH
 
 V2_SCHEMA_VERSION = "2.0.0"
 V2SchemaVersion = Literal["2.0.0"]
@@ -37,6 +37,22 @@ class DecisionKindV2(StrEnum):
     NO_TOOL = "NO_TOOL"
     INDETERMINATE = "INDETERMINATE"
     INVALID_CONTRACT = "INVALID_CONTRACT"
+
+
+def validate_oracle_state_tool_ids_v2(
+    state: OracleStateV2,
+    tool_ids: tuple[str, ...],
+    *,
+    field_label: str,
+) -> None:
+    """Validate the one authoritative state/admissible-set shape relation."""
+
+    if state is OracleStateV2.UNIQUE_ADMISSIBLE and len(tool_ids) != 1:
+        raise ValueError(f"{field_label}: UNIQUE_ADMISSIBLE requires exactly one tool")
+    if state is OracleStateV2.MULTIPLE_ADMISSIBLE and len(tool_ids) < 2:
+        raise ValueError(f"{field_label}: MULTIPLE_ADMISSIBLE requires at least two tools")
+    if state in {OracleStateV2.NO_ADMISSIBLE, OracleStateV2.CONTRACT_INVALID} and tool_ids:
+        raise ValueError(f"{field_label}: {state.value} requires an empty tool set")
 
 
 class FailureCodeV2(StrEnum):
@@ -174,6 +190,19 @@ class ClauseWitnessV2(V2ContractModel):
         field_name = getattr(info, "field_name", "tuple field")
         return _sorted_unique_v2(values, field_name)
 
+    @model_validator(mode="after")
+    def witness_matches_relation_registry(self) -> Self:
+        clause = V2_RELATION_CLAUSE_REGISTRY.get(self.clause_id)
+        if clause is None:
+            raise ValueError(f"unsupported v2 relation clause: {self.clause_id}")
+        if self.failure_code.value != clause.expected_failure_code:
+            raise ValueError("failure_code does not match the v2 relation clause registry")
+        if self.contract_fields != clause.contract_fields:
+            raise ValueError("contract_fields do not match the v2 relation clause registry")
+        if self.manifest_fields != clause.manifest_fields:
+            raise ValueError("manifest_fields do not match the v2 relation clause registry")
+        return self
+
 
 class OracleExpectationV2(V2ContractModel):
     """Evaluator-only human-authored proposal, never relation-checker input."""
@@ -197,30 +226,27 @@ class OracleExpectationV2(V2ContractModel):
 
     @model_validator(mode="after")
     def expected_state_shape_is_consistent(self) -> Self:
+        validate_oracle_state_tool_ids_v2(
+            self.expected_oracle_state,
+            self.expected_admissible_tool_ids,
+            field_label="expected oracle state/set",
+        )
         if self.expected_oracle_state is OracleStateV2.UNIQUE_ADMISSIBLE:
-            if len(self.expected_admissible_tool_ids) != 1:
-                raise ValueError("UNIQUE_ADMISSIBLE requires exactly one expected tool")
             if self.expected_decision is not DecisionKindV2.SELECT:
                 raise ValueError("UNIQUE_ADMISSIBLE requires expected_decision=SELECT")
             if self.expected_selected_tool_id != self.expected_admissible_tool_ids[0]:
                 raise ValueError("SELECT must name the unique expected admissible tool")
         elif self.expected_oracle_state is OracleStateV2.MULTIPLE_ADMISSIBLE:
-            if len(self.expected_admissible_tool_ids) < 2:
-                raise ValueError("MULTIPLE_ADMISSIBLE requires at least two expected tools")
             if self.expected_decision is not DecisionKindV2.INDETERMINATE:
                 raise ValueError("MULTIPLE_ADMISSIBLE requires expected_decision=INDETERMINATE")
             if self.expected_selected_tool_id is not None:
                 raise ValueError("INDETERMINATE cannot name a selected tool")
         elif self.expected_oracle_state is OracleStateV2.NO_ADMISSIBLE:
-            if self.expected_admissible_tool_ids:
-                raise ValueError("NO_ADMISSIBLE requires an empty expected set")
             if self.expected_decision is not DecisionKindV2.NO_TOOL:
                 raise ValueError("NO_ADMISSIBLE requires expected_decision=NO_TOOL")
             if self.expected_selected_tool_id is not None:
                 raise ValueError("NO_TOOL cannot name a selected tool")
         elif self.expected_oracle_state is OracleStateV2.CONTRACT_INVALID:
-            if self.expected_admissible_tool_ids:
-                raise ValueError("CONTRACT_INVALID requires an empty expected set")
             if self.expected_decision is not DecisionKindV2.INVALID_CONTRACT:
                 raise ValueError("CONTRACT_INVALID requires expected_decision=INVALID_CONTRACT")
             if self.expected_selected_tool_id is not None:
@@ -272,12 +298,23 @@ class OracleReviewRecordV2(V2ContractModel):
 
         if self.reviewed_expected_state is None or self.reviewed_admissible_tool_ids is None:
             raise ValueError("completed review requires reviewed state and admissible set")
+        validate_oracle_state_tool_ids_v2(
+            self.reviewed_expected_state,
+            self.reviewed_admissible_tool_ids,
+            field_label="reviewed oracle state/set",
+        )
         if self.review_performed_without_policy_outputs is None:
             raise ValueError("completed review must record policy-output independence")
         if self.disposition is not OracleReviewDispositionV2.ADJUDICATED and (
             self.adjudicated_state is not None or self.adjudicated_admissible_tool_ids is not None
         ):
             raise ValueError("only ADJUDICATED review may contain adjudicated values")
+        if self.adjudicated_state is not None and self.adjudicated_admissible_tool_ids is not None:
+            validate_oracle_state_tool_ids_v2(
+                self.adjudicated_state,
+                self.adjudicated_admissible_tool_ids,
+                field_label="adjudicated oracle state/set",
+            )
         return self
 
 
@@ -285,9 +322,12 @@ class OracleValidationFindingV2(V2ContractModel):
     schema_version: V2SchemaVersion = V2_SCHEMA_VERSION
     scenario_id: str = Field(pattern=r"^[a-z0-9_]+$")
     scenario_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expectation_present: bool
+    review_present: bool
     expectation_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     review_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     relation_registry_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    available_tool_ids: tuple[str, ...] = Field(min_length=1)
     computed_oracle_state: OracleStateV2
     computed_admissible_tool_ids: tuple[str, ...]
     computed_expected_decision: DecisionKindV2
@@ -302,6 +342,11 @@ class OracleValidationFindingV2(V2ContractModel):
     decision_matches_expectation: bool
     expectation_matches_relation: bool
     review_disposition: OracleReviewDispositionV2 | None
+    reviewed_expected_state: OracleStateV2 | None
+    reviewed_admissible_tool_ids: tuple[str, ...] | None
+    review_performed_without_policy_outputs: bool | None
+    adjudicated_state: OracleStateV2 | None
+    adjudicated_admissible_tool_ids: tuple[str, ...] | None
     review_readiness: ReviewReadinessV2
     evaluation_unit_status: EvaluationUnitStatusV2
     invalid_unit_reasons: tuple[str, ...]
@@ -309,6 +354,7 @@ class OracleValidationFindingV2(V2ContractModel):
     ready_for_freeze: bool
 
     @field_validator(
+        "available_tool_ids",
         "computed_admissible_tool_ids",
         "contract_invalid_reasons",
         "proposed_admissible_tool_ids",
@@ -323,56 +369,195 @@ class OracleValidationFindingV2(V2ContractModel):
         field_name = getattr(info, "field_name", "tuple field")
         return _sorted_unique_v2(values, field_name)
 
+    @field_validator("reviewed_admissible_tool_ids", "adjudicated_admissible_tool_ids")
+    @classmethod
+    def sort_and_reject_duplicate_optional_values(
+        cls,
+        values: tuple[str, ...] | None,
+        info: object,
+    ) -> tuple[str, ...] | None:
+        if values is None:
+            return None
+        field_name = getattr(info, "field_name", "optional tuple field")
+        return _sorted_unique_v2(values, field_name)
+
     @model_validator(mode="after")
     def finding_status_is_consistent(self) -> Self:
         if self.relation_registry_hash != V2_RELATION_REGISTRY_HASH:
             raise ValueError("relation_registry_hash does not match the active v2 registry")
-        expected_shapes = {
-            OracleStateV2.UNIQUE_ADMISSIBLE: (1, DecisionKindV2.SELECT),
-            OracleStateV2.MULTIPLE_ADMISSIBLE: (None, DecisionKindV2.INDETERMINATE),
-            OracleStateV2.NO_ADMISSIBLE: (0, DecisionKindV2.NO_TOOL),
-            OracleStateV2.CONTRACT_INVALID: (0, DecisionKindV2.INVALID_CONTRACT),
-        }
-        expected_count, expected_decision = expected_shapes[self.computed_oracle_state]
-        if expected_count is not None and len(self.computed_admissible_tool_ids) != expected_count:
-            raise ValueError(
-                f"{self.computed_oracle_state} requires {expected_count} computed tools"
-            )
-        if (
-            self.computed_oracle_state is OracleStateV2.MULTIPLE_ADMISSIBLE
-            and len(self.computed_admissible_tool_ids) < 2
-        ):
-            raise ValueError("MULTIPLE_ADMISSIBLE requires at least two computed tools")
+        validate_oracle_state_tool_ids_v2(
+            self.computed_oracle_state,
+            self.computed_admissible_tool_ids,
+            field_label="computed oracle state/set",
+        )
+        expected_decision = {
+            OracleStateV2.UNIQUE_ADMISSIBLE: DecisionKindV2.SELECT,
+            OracleStateV2.MULTIPLE_ADMISSIBLE: DecisionKindV2.INDETERMINATE,
+            OracleStateV2.NO_ADMISSIBLE: DecisionKindV2.NO_TOOL,
+            OracleStateV2.CONTRACT_INVALID: DecisionKindV2.INVALID_CONTRACT,
+        }[self.computed_oracle_state]
         if self.computed_expected_decision is not expected_decision:
             raise ValueError(
                 f"{self.computed_oracle_state} requires computed decision {expected_decision}"
             )
+
+        available_tool_ids = set(self.available_tool_ids)
+        computed_admissible_tool_ids = set(self.computed_admissible_tool_ids)
+        if not computed_admissible_tool_ids.issubset(available_tool_ids):
+            raise ValueError("computed admissible tools must be a subset of available tools")
+        witness_pairs = [
+            (witness.tool_id, witness.clause_id) for witness in self.relation_witnesses
+        ]
+        if len(witness_pairs) != len(set(witness_pairs)):
+            raise ValueError("relation witnesses must not duplicate a tool/clause pair")
+        for witness in self.relation_witnesses:
+            if witness.tool_id not in available_tool_ids:
+                raise ValueError("relation witness references an unavailable tool")
+            if witness.tool_id in computed_admissible_tool_ids:
+                raise ValueError("computed-admissible tool cannot have a relation witness")
+
         if self.computed_oracle_state is OracleStateV2.CONTRACT_INVALID:
             if not self.contract_invalid_reasons:
                 raise ValueError("CONTRACT_INVALID requires a semantic contract-invalid reason")
+            if self.relation_witnesses:
+                raise ValueError("CONTRACT_INVALID cannot contain ordinary tool witnesses")
         elif self.contract_invalid_reasons:
             raise ValueError("non-CONTRACT_INVALID finding cannot have contract-invalid reasons")
+        else:
+            witnessed_tool_ids = {witness.tool_id for witness in self.relation_witnesses}
+            missing_witness_tool_ids = sorted(
+                available_tool_ids - computed_admissible_tool_ids - witnessed_tool_ids
+            )
+            if missing_witness_tool_ids:
+                raise ValueError(
+                    "available inadmissible tools require relation witnesses: "
+                    f"{missing_witness_tool_ids}"
+                )
 
-        expected_match = (
-            self.state_matches_expectation
-            and self.admissible_set_matches_expectation
-            and self.decision_matches_expectation
-        )
-        if self.expectation_matches_relation is not expected_match:
-            raise ValueError("expectation_matches_relation does not match component flags")
-        if self.evaluation_unit_status is EvaluationUnitStatusV2.INVALID:
-            if not self.invalid_unit_reasons:
-                raise ValueError("invalid evaluation unit requires invalid-unit reasons")
-            if self.ready_for_scoring or self.ready_for_freeze:
-                raise ValueError("invalid evaluation unit cannot be ready")
-        elif self.invalid_unit_reasons:
-            raise ValueError("scoreable evaluation unit cannot have invalid-unit reasons")
-        if self.ready_for_freeze and not self.ready_for_scoring:
-            raise ValueError("freeze readiness requires scoring readiness")
-        if self.review_disposition is OracleReviewDispositionV2.PENDING and (
-            self.ready_for_scoring or self.ready_for_freeze
+        if self.expectation_present:
+            if self.expectation_hash is None:
+                raise ValueError("present expectation requires expectation_hash")
+            if self.proposed_oracle_state is None or self.proposed_expected_decision is None:
+                raise ValueError("present expectation requires proposed state and decision")
+            validate_oracle_state_tool_ids_v2(
+                self.proposed_oracle_state,
+                self.proposed_admissible_tool_ids,
+                field_label="proposed oracle state/set",
+            )
+            proposed_decision = {
+                OracleStateV2.UNIQUE_ADMISSIBLE: DecisionKindV2.SELECT,
+                OracleStateV2.MULTIPLE_ADMISSIBLE: DecisionKindV2.INDETERMINATE,
+                OracleStateV2.NO_ADMISSIBLE: DecisionKindV2.NO_TOOL,
+                OracleStateV2.CONTRACT_INVALID: DecisionKindV2.INVALID_CONTRACT,
+            }[self.proposed_oracle_state]
+            if self.proposed_expected_decision is not proposed_decision:
+                raise ValueError("proposed decision does not match the proposed oracle state")
+            expected_selected_tool_id = (
+                self.proposed_admissible_tool_ids[0]
+                if proposed_decision is DecisionKindV2.SELECT
+                else None
+            )
+            if self.proposed_selected_tool_id != expected_selected_tool_id:
+                raise ValueError("proposed selected tool does not match the proposed state/set")
+        elif (
+            any(
+                value is not None
+                for value in (
+                    self.expectation_hash,
+                    self.proposed_oracle_state,
+                    self.proposed_expected_decision,
+                    self.proposed_selected_tool_id,
+                )
+            )
+            or self.proposed_admissible_tool_ids
         ):
-            raise ValueError("pending review cannot be ready for scoring or freeze")
+            raise ValueError("missing expectation cannot contain expectation evidence")
+
+        completed_review_values = (
+            self.reviewed_expected_state,
+            self.reviewed_admissible_tool_ids,
+            self.review_performed_without_policy_outputs,
+            self.adjudicated_state,
+            self.adjudicated_admissible_tool_ids,
+        )
+        if self.review_present:
+            if self.review_hash is None or self.review_disposition is None:
+                raise ValueError("present review requires review hash and disposition")
+            if self.review_disposition is OracleReviewDispositionV2.PENDING:
+                if any(value is not None for value in completed_review_values):
+                    raise ValueError("PENDING finding cannot contain completed-review evidence")
+            else:
+                if (
+                    self.reviewed_expected_state is None
+                    or self.reviewed_admissible_tool_ids is None
+                    or self.review_performed_without_policy_outputs is None
+                ):
+                    raise ValueError("completed finding requires complete reviewed evidence")
+                validate_oracle_state_tool_ids_v2(
+                    self.reviewed_expected_state,
+                    self.reviewed_admissible_tool_ids,
+                    field_label="finding reviewed oracle state/set",
+                )
+                if self.review_disposition is not OracleReviewDispositionV2.ADJUDICATED and (
+                    self.adjudicated_state is not None
+                    or self.adjudicated_admissible_tool_ids is not None
+                ):
+                    raise ValueError("only ADJUDICATED finding may contain adjudicated evidence")
+                if (
+                    self.adjudicated_state is not None
+                    and self.adjudicated_admissible_tool_ids is not None
+                ):
+                    validate_oracle_state_tool_ids_v2(
+                        self.adjudicated_state,
+                        self.adjudicated_admissible_tool_ids,
+                        field_label="finding adjudicated oracle state/set",
+                    )
+        elif (
+            self.review_hash is not None
+            or self.review_disposition is not None
+            or any(value is not None for value in completed_review_values)
+        ):
+            raise ValueError("missing review cannot contain review evidence")
+
+        from .v2_semantics import (  # Avoid a module-initialization cycle.
+            OracleValidationEvidenceV2,
+            derive_oracle_validation_state_v2,
+        )
+
+        derived = derive_oracle_validation_state_v2(
+            OracleValidationEvidenceV2(
+                expectation_present=self.expectation_present,
+                review_present=self.review_present,
+                computed_oracle_state=self.computed_oracle_state,
+                computed_admissible_tool_ids=self.computed_admissible_tool_ids,
+                computed_expected_decision=self.computed_expected_decision,
+                proposed_oracle_state=self.proposed_oracle_state,
+                proposed_admissible_tool_ids=self.proposed_admissible_tool_ids,
+                proposed_expected_decision=self.proposed_expected_decision,
+                proposed_selected_tool_id=self.proposed_selected_tool_id,
+                review_disposition=self.review_disposition,
+                reviewed_expected_state=self.reviewed_expected_state,
+                reviewed_admissible_tool_ids=self.reviewed_admissible_tool_ids,
+                review_performed_without_policy_outputs=(
+                    self.review_performed_without_policy_outputs
+                ),
+                adjudicated_state=self.adjudicated_state,
+                adjudicated_admissible_tool_ids=self.adjudicated_admissible_tool_ids,
+            )
+        )
+        for field_name in (
+            "state_matches_expectation",
+            "admissible_set_matches_expectation",
+            "decision_matches_expectation",
+            "expectation_matches_relation",
+            "review_readiness",
+            "evaluation_unit_status",
+            "invalid_unit_reasons",
+            "ready_for_scoring",
+            "ready_for_freeze",
+        ):
+            if getattr(self, field_name) != getattr(derived, field_name):
+                raise ValueError(f"{field_name} differs from authoritative v2 derivation")
         return self
 
 

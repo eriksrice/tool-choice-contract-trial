@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 import tool_choice_contract_trial.cli as cli_module
+from tool_choice_contract_trial.errors import ArtifactIntegrityError
 from tool_choice_contract_trial.serialization import canonical_hash
 from tool_choice_contract_trial.v2_io import (
     load_oracle_expectations_v2,
@@ -24,6 +25,8 @@ from tool_choice_contract_trial.v2_schema import (
 from tool_choice_contract_trial.v2_validation import (
     build_provisional_manifest_v2,
     validate_oracle_candidates_v2,
+    verify_oracle_validation_finding_v2,
+    verify_provisional_manifest_v2,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,12 +83,14 @@ def test_v2_review_packet_is_a_pure_validated_bundle_projection(tmp_path: Path) 
     outputs = _run_cli(tmp_path)
     views = load_policy_views_v2(FIXTURES / "scenarios.jsonl")
     expectations = load_oracle_expectations_v2(FIXTURES / "oracle_expectations.jsonl")
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
     findings = load_oracle_validation_findings_v2(outputs["findings"])
     manifest = load_provisional_manifest_v2(outputs["manifest"])
 
     assert outputs["report"].read_text() == render_oracle_review_packet_v2(
         views,
         expectations,
+        reviews,
         findings,
         manifest,
     )
@@ -102,11 +107,68 @@ def test_v2_review_packet_and_manifest_state_the_review_boundary(tmp_path: Path)
     assert "EVALUATION_UNIT_INVALID" in report
     assert "No policy decisions" in report
     assert "have not been processed by the v1 authority-only counterfactual analyzer" in report
+    assert "all 12 checked-in reviews are pending" in report
+    assert "Authoring rationale" in report
+    assert "capabilities" in report
+    assert "authority" in report
+    assert "Relation witnesses" in report
+    assert "forbidden tool ID is unavailable: v2_tool_099" in report
     assert manifest.bundle_status is BundleStatusV2.PROVISIONAL_REVIEW_CANDIDATE
     assert manifest.pending_review_count == 12
     assert manifest.invalid_unit_count == 0
     assert manifest.contract_invalid_count == 1
     assert outputs["invalid"].read_bytes() == b""
+
+
+def test_loaded_findings_round_trip_through_source_aware_verification(tmp_path: Path) -> None:
+    outputs = _run_cli(tmp_path)
+    views = load_policy_views_v2(FIXTURES / "scenarios.jsonl")
+    expectations = load_oracle_expectations_v2(FIXTURES / "oracle_expectations.jsonl")
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
+    findings = load_oracle_validation_findings_v2(outputs["findings"])
+    views_by_id = {row.scenario_id: row for row in views}
+    expectations_by_id = {row.scenario_id: row for row in expectations}
+    reviews_by_id = {row.scenario_id: row for row in reviews}
+
+    for finding in findings:
+        verify_oracle_validation_finding_v2(
+            finding,
+            views_by_id[finding.scenario_id],
+            expectations_by_id[finding.scenario_id],
+            reviews_by_id[finding.scenario_id],
+        )
+
+
+def test_loaded_manifest_round_trips_through_source_aware_verification(tmp_path: Path) -> None:
+    outputs = _run_cli(tmp_path)
+    views = load_policy_views_v2(FIXTURES / "scenarios.jsonl")
+    expectations = load_oracle_expectations_v2(FIXTURES / "oracle_expectations.jsonl")
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
+    findings = load_oracle_validation_findings_v2(outputs["findings"])
+    manifest = load_provisional_manifest_v2(outputs["manifest"])
+
+    verify_provisional_manifest_v2(manifest, views, expectations, reviews, findings)
+
+
+def test_review_packet_rejects_loaded_but_source_inconsistent_evidence(
+    tmp_path: Path,
+) -> None:
+    outputs = _run_cli(tmp_path)
+    views = load_policy_views_v2(FIXTURES / "scenarios.jsonl")
+    expectations = load_oracle_expectations_v2(FIXTURES / "oracle_expectations.jsonl")
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
+    findings = load_oracle_validation_findings_v2(outputs["findings"])
+    manifest = load_provisional_manifest_v2(outputs["manifest"])
+    changed_finding = findings[0].model_copy(update={"scenario_hash": "0" * 64})
+
+    with pytest.raises(ArtifactIntegrityError, match="scenario_hash"):
+        render_oracle_review_packet_v2(
+            views,
+            expectations,
+            reviews,
+            (changed_finding, *findings[1:]),
+            manifest,
+        )
 
 
 def test_v2_command_never_loads_oracles_or_policy_decisions(
@@ -222,3 +284,63 @@ def test_provisional_manifest_hash_changes_with_scenario_or_expectation_mutation
     assert canonical_hash(scenario_mutation) != canonical_hash(baseline)
     assert canonical_hash(expectation_mutation) != canonical_hash(baseline)
     assert canonical_hash(review_mutation) != canonical_hash(baseline)
+
+
+@pytest.fixture
+def source_verified_manifest_bundle() -> tuple[object, tuple[object, ...], ...]:
+    views = load_policy_views_v2(FIXTURES / "scenarios.jsonl")
+    expectations = load_oracle_expectations_v2(FIXTURES / "oracle_expectations.jsonl")
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
+    findings = validate_oracle_candidates_v2(views, expectations, reviews)
+    manifest = build_provisional_manifest_v2(views, expectations, reviews, findings)
+    return manifest, views, expectations, reviews, findings
+
+
+@pytest.mark.parametrize("count_field", ("pending_review_count", "invalid_unit_count"))
+def test_source_aware_manifest_rejects_altered_review_counts(
+    count_field: str,
+    source_verified_manifest_bundle: tuple[object, tuple[object, ...], ...],
+) -> None:
+    manifest, views, expectations, reviews, findings = source_verified_manifest_bundle
+    changed = manifest.model_copy(update={count_field: getattr(manifest, count_field) + 1})
+
+    with pytest.raises(ArtifactIntegrityError, match=count_field):
+        verify_provisional_manifest_v2(changed, views, expectations, reviews, findings)
+
+
+def test_source_aware_manifest_rejects_altered_bundle_or_scenario_hash(
+    source_verified_manifest_bundle: tuple[object, tuple[object, ...], ...],
+) -> None:
+    manifest, views, expectations, reviews, findings = source_verified_manifest_bundle
+    changed_bundle = manifest.model_copy(update={"scenario_bundle_hash": "0" * 64})
+    changed_artifact = manifest.scenario_artifacts[0].model_copy(update={"finding_hash": "0" * 64})
+    changed_scenario = manifest.model_copy(
+        update={"scenario_artifacts": (changed_artifact, *manifest.scenario_artifacts[1:])}
+    )
+
+    with pytest.raises(ArtifactIntegrityError, match="scenario_bundle_hash"):
+        verify_provisional_manifest_v2(changed_bundle, views, expectations, reviews, findings)
+    with pytest.raises(ArtifactIntegrityError, match="scenario_artifacts"):
+        verify_provisional_manifest_v2(changed_scenario, views, expectations, reviews, findings)
+
+
+@pytest.mark.parametrize("shape", ("missing", "extra", "mismatched"))
+def test_source_aware_manifest_rejects_changed_scenario_artifact_set(
+    shape: str,
+    source_verified_manifest_bundle: tuple[object, tuple[object, ...], ...],
+) -> None:
+    manifest, views, expectations, reviews, findings = source_verified_manifest_bundle
+    artifacts = manifest.scenario_artifacts
+    if shape == "missing":
+        changed_artifacts = artifacts[:-1]
+    elif shape == "extra":
+        changed_artifacts = (*artifacts, artifacts[-1])
+    else:
+        changed_artifacts = (
+            artifacts[0].model_copy(update={"scenario_id": "v2_scenario_099"}),
+            *artifacts[1:],
+        )
+    changed = manifest.model_copy(update={"scenario_artifacts": changed_artifacts})
+
+    with pytest.raises(ArtifactIntegrityError, match="scenario_artifacts"):
+        verify_provisional_manifest_v2(changed, views, expectations, reviews, findings)

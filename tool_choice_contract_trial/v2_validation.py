@@ -22,11 +22,11 @@ from .v2_models import (
     OracleValidationFindingV2,
     PolicyViewV2,
     ProvisionalBundleManifestV2,
-    ReviewReadinessV2,
     ScenarioArtifactRecordV2,
 )
 from .v2_registry import V2_RELATION_REGISTRY_HASH
 from .v2_relation import RelationAssessmentV2, assess_policy_view_v2
+from .v2_semantics import OracleValidationEvidenceV2, derive_oracle_validation_state_v2
 
 
 def _unique_by_scenario[V2Artifact: BaseModel](
@@ -71,94 +71,48 @@ def _finding_for_scenario(
     expectation: OracleExpectationV2 | None,
     review: OracleReviewRecordV2 | None,
 ) -> OracleValidationFindingV2:
+    if expectation is not None and expectation.scenario_id != view.scenario_id:
+        raise ArtifactIntegrityError("v2 expectation linkage does not match the policy view")
+    if review is not None and review.scenario_id != view.scenario_id:
+        raise ArtifactIntegrityError("v2 review linkage does not match the policy view")
+
     proposed_state = expectation.expected_oracle_state if expectation else None
     proposed_set = expectation.expected_admissible_tool_ids if expectation else ()
     proposed_decision = expectation.expected_decision if expectation else None
     proposed_selected_tool_id = expectation.expected_selected_tool_id if expectation else None
-    state_matches = expectation is not None and proposed_state is relation.oracle_state
-    set_matches = expectation is not None and proposed_set == relation.admissible_tool_ids
-    decision_matches = expectation is not None and proposed_decision is relation.expected_decision
-
-    invalid_reasons: list[str] = []
-    if expectation is None:
-        invalid_reasons.append("missing oracle expectation")
-    if review is None:
-        invalid_reasons.append("missing oracle review record")
-
-    review_readiness = ReviewReadinessV2.INVALID_UNIT
-    if review is not None:
-        if review.disposition is OracleReviewDispositionV2.PENDING:
-            review_readiness = ReviewReadinessV2.PENDING_REVIEW
-        else:
-            if review.review_performed_without_policy_outputs is not True:
-                invalid_reasons.append(
-                    "completed review did not establish policy-output independence"
-                )
-
-            if review.disposition is OracleReviewDispositionV2.AGREE:
-                review_readiness = ReviewReadinessV2.REVIEW_COMPLETE
-                if expectation is None:
-                    invalid_reasons.append("review agreement has no linked expectation")
-                else:
-                    if (
-                        review.reviewed_expected_state is not expectation.expected_oracle_state
-                        or review.reviewed_admissible_tool_ids
-                        != expectation.expected_admissible_tool_ids
-                    ):
-                        invalid_reasons.append(
-                            "review claims agreement but reviewed values differ from the proposal"
-                        )
-                if (
-                    review.reviewed_expected_state is not relation.oracle_state
-                    or review.reviewed_admissible_tool_ids != relation.admissible_tool_ids
-                ):
-                    invalid_reasons.append(
-                        "review agreement differs from the independently computed relation"
-                    )
-                if not (state_matches and set_matches and decision_matches):
-                    invalid_reasons.append(
-                        "proposed expectation differs from the independently computed relation"
-                    )
-            elif review.disposition is OracleReviewDispositionV2.DISAGREE:
-                review_readiness = ReviewReadinessV2.ADJUDICATION_REQUIRED
-                invalid_reasons.append("completed disagreement lacks adjudication")
-            elif review.disposition is OracleReviewDispositionV2.ADJUDICATED:
-                review_readiness = ReviewReadinessV2.ADJUDICATED
-                if (
-                    review.adjudicated_state is None
-                    or review.adjudicated_admissible_tool_ids is None
-                ):
-                    invalid_reasons.append("adjudication is incomplete")
-                elif (
-                    review.adjudicated_state is not relation.oracle_state
-                    or review.adjudicated_admissible_tool_ids != relation.admissible_tool_ids
-                ):
-                    invalid_reasons.append(
-                        "adjudicated values differ from the independently computed relation"
-                    )
-
-    ordered_invalid_reasons = tuple(sorted(set(invalid_reasons)))
-    evaluation_status = (
-        EvaluationUnitStatusV2.INVALID
-        if ordered_invalid_reasons
-        else EvaluationUnitStatusV2.SCOREABLE
-    )
-    completed_and_coherent = (
-        evaluation_status is EvaluationUnitStatusV2.SCOREABLE
-        and review is not None
-        and review.disposition
-        in {
-            OracleReviewDispositionV2.AGREE,
-            OracleReviewDispositionV2.ADJUDICATED,
-        }
+    lifecycle = derive_oracle_validation_state_v2(
+        OracleValidationEvidenceV2(
+            expectation_present=expectation is not None,
+            review_present=review is not None,
+            computed_oracle_state=relation.oracle_state,
+            computed_admissible_tool_ids=relation.admissible_tool_ids,
+            computed_expected_decision=relation.expected_decision,
+            proposed_oracle_state=proposed_state,
+            proposed_admissible_tool_ids=proposed_set,
+            proposed_expected_decision=proposed_decision,
+            proposed_selected_tool_id=proposed_selected_tool_id,
+            review_disposition=review.disposition if review else None,
+            reviewed_expected_state=review.reviewed_expected_state if review else None,
+            reviewed_admissible_tool_ids=(review.reviewed_admissible_tool_ids if review else None),
+            review_performed_without_policy_outputs=(
+                review.review_performed_without_policy_outputs if review else None
+            ),
+            adjudicated_state=review.adjudicated_state if review else None,
+            adjudicated_admissible_tool_ids=(
+                review.adjudicated_admissible_tool_ids if review else None
+            ),
+        )
     )
 
     return OracleValidationFindingV2(
         scenario_id=view.scenario_id,
         scenario_hash=policy_view_v2_artifact_hash(view),
+        expectation_present=expectation is not None,
+        review_present=review is not None,
         expectation_hash=canonical_hash(expectation) if expectation else None,
         review_hash=canonical_hash(review) if review else None,
         relation_registry_hash=V2_RELATION_REGISTRY_HASH,
+        available_tool_ids=tuple(sorted(tool.tool_id for tool in view.tools)),
         computed_oracle_state=relation.oracle_state,
         computed_admissible_tool_ids=relation.admissible_tool_ids,
         computed_expected_decision=relation.expected_decision,
@@ -168,17 +122,54 @@ def _finding_for_scenario(
         proposed_admissible_tool_ids=proposed_set,
         proposed_expected_decision=proposed_decision,
         proposed_selected_tool_id=proposed_selected_tool_id,
-        state_matches_expectation=state_matches,
-        admissible_set_matches_expectation=set_matches,
-        decision_matches_expectation=decision_matches,
-        expectation_matches_relation=state_matches and set_matches and decision_matches,
+        state_matches_expectation=lifecycle.state_matches_expectation,
+        admissible_set_matches_expectation=(lifecycle.admissible_set_matches_expectation),
+        decision_matches_expectation=lifecycle.decision_matches_expectation,
+        expectation_matches_relation=lifecycle.expectation_matches_relation,
         review_disposition=review.disposition if review else None,
-        review_readiness=review_readiness,
-        evaluation_unit_status=evaluation_status,
-        invalid_unit_reasons=ordered_invalid_reasons,
-        ready_for_scoring=completed_and_coherent,
-        ready_for_freeze=completed_and_coherent,
+        reviewed_expected_state=review.reviewed_expected_state if review else None,
+        reviewed_admissible_tool_ids=(review.reviewed_admissible_tool_ids if review else None),
+        review_performed_without_policy_outputs=(
+            review.review_performed_without_policy_outputs if review else None
+        ),
+        adjudicated_state=review.adjudicated_state if review else None,
+        adjudicated_admissible_tool_ids=(
+            review.adjudicated_admissible_tool_ids if review else None
+        ),
+        review_readiness=lifecycle.review_readiness,
+        evaluation_unit_status=lifecycle.evaluation_unit_status,
+        invalid_unit_reasons=lifecycle.invalid_unit_reasons,
+        ready_for_scoring=lifecycle.ready_for_scoring,
+        ready_for_freeze=lifecycle.ready_for_freeze,
     )
+
+
+def verify_oracle_validation_finding_v2(
+    finding: OracleValidationFindingV2,
+    policy_view: PolicyViewV2,
+    expectation: OracleExpectationV2 | None,
+    review: OracleReviewRecordV2 | None,
+) -> None:
+    """Verify a persisted finding by recomputing it from all source artifacts."""
+
+    expected = _finding_for_scenario(
+        view=policy_view,
+        relation=assess_policy_view_v2(policy_view),
+        expectation=expectation,
+        review=review,
+    )
+    if finding != expected:
+        supplied = finding.model_dump(mode="json")
+        recomputed = expected.model_dump(mode="json")
+        changed_fields = sorted(
+            field_name
+            for field_name in set(supplied) | set(recomputed)
+            if supplied.get(field_name) != recomputed.get(field_name)
+        )
+        raise ArtifactIntegrityError(
+            "v2 oracle validation finding differs from source-aware recomputation: "
+            f"scenario={policy_view.scenario_id}, fields={changed_fields}"
+        )
 
 
 def validate_oracle_candidates_v2(
@@ -220,7 +211,7 @@ def validate_oracle_candidates_v2(
     )
 
 
-def build_provisional_manifest_v2(
+def _assemble_provisional_manifest_v2(
     policy_views: Iterable[PolicyViewV2],
     expectations: Iterable[OracleExpectationV2],
     reviews: Iterable[OracleReviewRecordV2],
@@ -236,6 +227,10 @@ def build_provisional_manifest_v2(
     findings_by_id = _unique_by_scenario(finding_rows, "v2 oracle validation finding")
     if set(findings_by_id) != set(views_by_id):
         raise ArtifactIntegrityError("v2 finding scenario set does not match policy views")
+    if not set(expectations_by_id).issubset(views_by_id):
+        raise ArtifactIntegrityError("v2 expectation scenario set exceeds policy views")
+    if not set(reviews_by_id).issubset(views_by_id):
+        raise ArtifactIntegrityError("v2 review scenario set exceeds policy views")
 
     scenario_artifacts = tuple(
         ScenarioArtifactRecordV2(
@@ -292,6 +287,86 @@ def build_provisional_manifest_v2(
         contract_invalid_count=state_counts.contract_invalid,
         bundle_status=BundleStatusV2.PROVISIONAL_REVIEW_CANDIDATE,
     )
+
+
+def verify_provisional_manifest_v2(
+    manifest: ProvisionalBundleManifestV2,
+    policy_views: Iterable[PolicyViewV2],
+    expectations: Iterable[OracleExpectationV2],
+    reviews: Iterable[OracleReviewRecordV2],
+    findings: Iterable[OracleValidationFindingV2],
+) -> None:
+    """Verify a provisional manifest and every finding against source artifacts."""
+
+    view_rows = tuple(policy_views)
+    expectation_rows = tuple(expectations)
+    review_rows = tuple(reviews)
+    finding_rows = tuple(findings)
+    views_by_id = _unique_by_scenario(view_rows, "v2 policy view")
+    expectations_by_id = _unique_by_scenario(expectation_rows, "v2 oracle expectation")
+    reviews_by_id = _unique_by_scenario(review_rows, "v2 oracle review")
+    findings_by_id = _unique_by_scenario(finding_rows, "v2 oracle validation finding")
+    if set(findings_by_id) != set(views_by_id):
+        raise ArtifactIntegrityError("v2 finding scenario set does not match policy views")
+    if not set(expectations_by_id).issubset(views_by_id):
+        raise ArtifactIntegrityError("v2 expectation scenario set exceeds policy views")
+    if not set(reviews_by_id).issubset(views_by_id):
+        raise ArtifactIntegrityError("v2 review scenario set exceeds policy views")
+
+    for scenario_id, view in sorted(views_by_id.items()):
+        verify_oracle_validation_finding_v2(
+            findings_by_id[scenario_id],
+            view,
+            expectations_by_id.get(scenario_id),
+            reviews_by_id.get(scenario_id),
+        )
+
+    expected = _assemble_provisional_manifest_v2(
+        view_rows,
+        expectation_rows,
+        review_rows,
+        finding_rows,
+    )
+    if manifest != expected:
+        supplied = manifest.model_dump(mode="json")
+        recomputed = expected.model_dump(mode="json")
+        changed_fields = sorted(
+            field_name
+            for field_name in set(supplied) | set(recomputed)
+            if supplied.get(field_name) != recomputed.get(field_name)
+        )
+        raise ArtifactIntegrityError(
+            "v2 provisional manifest differs from source-aware recomputation: "
+            f"fields={changed_fields}"
+        )
+
+
+def build_provisional_manifest_v2(
+    policy_views: Iterable[PolicyViewV2],
+    expectations: Iterable[OracleExpectationV2],
+    reviews: Iterable[OracleReviewRecordV2],
+    findings: Iterable[OracleValidationFindingV2],
+) -> ProvisionalBundleManifestV2:
+    """Construct and immediately source-verify the provisional v2 manifest."""
+
+    view_rows = tuple(policy_views)
+    expectation_rows = tuple(expectations)
+    review_rows = tuple(reviews)
+    finding_rows = tuple(findings)
+    manifest = _assemble_provisional_manifest_v2(
+        view_rows,
+        expectation_rows,
+        review_rows,
+        finding_rows,
+    )
+    verify_provisional_manifest_v2(
+        manifest,
+        view_rows,
+        expectation_rows,
+        review_rows,
+        finding_rows,
+    )
+    return manifest
 
 
 def write_provisional_manifest_v2(path: Path, manifest: ProvisionalBundleManifestV2) -> None:

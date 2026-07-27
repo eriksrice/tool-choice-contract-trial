@@ -12,6 +12,7 @@ This repository evaluates whether declared tool manifests satisfy typed task con
 - The v2 relation checker must receive only `PolicyViewV2`; proposed expectations, reviews, family labels, and adjudications remain evaluator-only and are compared only after relation computation.
 - Incompatibility witnesses are per-scenario tool facts; counterfactual findings are cross-scenario evaluator artifacts. Do not turn either into post-hoc policy labels.
 - Keep intentional policy-visible `CONTRACT_INVALID` relations distinct from defective `EVALUATION_UNIT_INVALID` authoring or review relationships.
+- Treat loaded v2 findings and manifests as schema-valid but untrusted until source-aware verification recomputes their relation, lifecycle, witnesses, hashes, and counts.
 - Never mutate fixtures, oracle records, or expected semantics after observing policy output.
 
 ## Types and determinism

@@ -7,9 +7,14 @@ import pytest
 from pydantic import ValidationError
 
 from tool_choice_contract_trial.errors import ArtifactIntegrityError, SchemaInvalidError
-from tool_choice_contract_trial.v2_io import load_policy_views_v2
+from tool_choice_contract_trial.v2_io import (
+    load_oracle_expectations_v2,
+    load_oracle_reviews_v2,
+    load_policy_views_v2,
+)
 from tool_choice_contract_trial.v2_models import (
     OracleStateV2,
+    OracleValidationFindingV2,
     PolicyViewV2,
     TaskContractV2,
     ToolManifestV2,
@@ -20,14 +25,27 @@ from tool_choice_contract_trial.v2_registry import (
     V2_RELATION_CLAUSE_REGISTRY,
 )
 from tool_choice_contract_trial.v2_relation import assess_policy_view_v2
+from tool_choice_contract_trial.v2_validation import validate_oracle_candidates_v2
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = ROOT / "fixtures" / "milestone_2b" / "review_candidate" / "scenarios.jsonl"
+EXPECTATIONS = ROOT / "fixtures" / "milestone_2b" / "review_candidate" / "oracle_expectations.jsonl"
+REVIEWS = ROOT / "fixtures" / "milestone_2b" / "review_candidate" / "oracle_reviews.jsonl"
 
 
 @pytest.fixture
 def v2_views() -> dict[str, PolicyViewV2]:
     return {view.scenario_id: view for view in load_policy_views_v2(SCENARIOS)}
+
+
+@pytest.fixture
+def v2_findings() -> dict[str, OracleValidationFindingV2]:
+    findings = validate_oracle_candidates_v2(
+        load_policy_views_v2(SCENARIOS),
+        load_oracle_expectations_v2(EXPECTATIONS),
+        load_oracle_reviews_v2(REVIEWS),
+    )
+    return {finding.scenario_id: finding for finding in findings}
 
 
 def test_input_profile_family_relations(v2_views: dict[str, PolicyViewV2]) -> None:
@@ -153,6 +171,17 @@ def test_v2_registry_is_explicit_and_milestone_bounded() -> None:
         "output.requirement",
         "tool.prohibition",
     }
+    assert {
+        clause_id: clause.expected_failure_code
+        for clause_id, clause in V2_RELATION_CLAUSE_REGISTRY.items()
+    } == {
+        "authority.requirement": "F_AUTHORITY_MISMATCH",
+        "capability.requirement": "F_CAPABILITY_MISMATCH",
+        "input.requirement": "F_INPUT_CONTRACT_MISMATCH",
+        "output.citations": "F_OUTPUT_CONTRACT_MISMATCH",
+        "output.requirement": "F_OUTPUT_CONTRACT_MISMATCH",
+        "tool.prohibition": "F_EXPLICIT_PROHIBITION",
+    }
 
 
 def test_policy_visible_v2_boundary_contains_no_evaluator_fields(
@@ -225,3 +254,71 @@ def test_malformed_v2_policy_view_fails_schema_validation(tmp_path: Path) -> Non
 
     with pytest.raises(SchemaInvalidError, match="SCHEMA_INVALID"):
         load_policy_views_v2(path)
+
+
+def test_finding_rejects_admissible_tool_absent_from_available_provenance(
+    v2_findings: dict[str, OracleValidationFindingV2],
+) -> None:
+    payload = v2_findings["v2_scenario_001"].model_dump(mode="json")
+    payload["available_tool_ids"] = ["v2_tool_002"]
+
+    with pytest.raises(ValidationError, match="subset of available tools"):
+        OracleValidationFindingV2.model_validate(payload)
+
+
+def test_finding_rejects_witness_for_unknown_or_admissible_tool(
+    v2_findings: dict[str, OracleValidationFindingV2],
+) -> None:
+    baseline = v2_findings["v2_scenario_001"]
+    for tool_id, message in (
+        ("v2_tool_099", "unavailable tool"),
+        ("v2_tool_001", "computed-admissible tool"),
+    ):
+        payload = baseline.model_dump(mode="json")
+        payload["relation_witnesses"][0]["tool_id"] = tool_id
+        with pytest.raises(ValidationError, match=message):
+            OracleValidationFindingV2.model_validate(payload)
+
+
+def test_clause_witness_rejects_wrong_failure_code_or_registry_fields(
+    v2_findings: dict[str, OracleValidationFindingV2],
+) -> None:
+    baseline = v2_findings["v2_scenario_001"]
+    changes = (
+        ("failure_code", "F_AUTHORITY_MISMATCH", "failure_code"),
+        ("contract_fields", ["contract.required_output_profiles"], "contract_fields"),
+        ("manifest_fields", ["manifest.produced_output_profiles"], "manifest_fields"),
+    )
+    for field_name, value, message in changes:
+        payload = baseline.model_dump(mode="json")
+        payload["relation_witnesses"][0][field_name] = value
+        with pytest.raises(ValidationError, match=message):
+            OracleValidationFindingV2.model_validate(payload)
+
+
+def test_finding_rejects_missing_or_duplicate_inadmissibility_witness(
+    v2_findings: dict[str, OracleValidationFindingV2],
+) -> None:
+    baseline = v2_findings["v2_scenario_001"]
+    missing = baseline.model_dump(mode="json")
+    missing["relation_witnesses"] = []
+    duplicate = baseline.model_dump(mode="json")
+    duplicate["relation_witnesses"].append(duplicate["relation_witnesses"][0].copy())
+
+    with pytest.raises(ValidationError, match="require relation witnesses"):
+        OracleValidationFindingV2.model_validate(missing)
+    with pytest.raises(ValidationError, match="duplicate a tool/clause pair"):
+        OracleValidationFindingV2.model_validate(duplicate)
+
+
+def test_contract_invalid_finding_rejects_ordinary_tool_witnesses(
+    v2_findings: dict[str, OracleValidationFindingV2],
+) -> None:
+    payload = v2_findings["v2_scenario_012"].model_dump(mode="json")
+    prohibition_witness = v2_findings["v2_scenario_009"].model_dump(mode="json")[
+        "relation_witnesses"
+    ][0]
+    payload["relation_witnesses"] = [prohibition_witness]
+
+    with pytest.raises(ValidationError, match="CONTRACT_INVALID cannot contain"):
+        OracleValidationFindingV2.model_validate(payload)

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from tool_choice_contract_trial.errors import ArtifactIntegrityError, SchemaInvalidError
 from tool_choice_contract_trial.v2_io import (
@@ -18,11 +19,15 @@ from tool_choice_contract_trial.v2_models import (
     OracleReviewDispositionV2,
     OracleReviewRecordV2,
     OracleStateV2,
+    OracleValidationFindingV2,
     PolicyViewV2,
     ReviewReadinessV2,
 )
 from tool_choice_contract_trial.v2_relation import assess_policy_view_v2
-from tool_choice_contract_trial.v2_validation import validate_oracle_candidates_v2
+from tool_choice_contract_trial.v2_validation import (
+    validate_oracle_candidates_v2,
+    verify_oracle_validation_finding_v2,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures" / "milestone_2b" / "review_candidate"
@@ -137,6 +142,12 @@ def test_proposed_admissible_set_mismatch_is_visible_but_pending_review_remains_
     assert not finding.expectation_matches_relation
     assert finding.review_readiness is ReviewReadinessV2.PENDING_REVIEW
     assert not finding.ready_for_scoring
+
+    dishonest = finding.model_dump(mode="json")
+    dishonest["admissible_set_matches_expectation"] = True
+    dishonest["expectation_matches_relation"] = True
+    with pytest.raises(ValidationError, match="admissible_set_matches_expectation"):
+        OracleValidationFindingV2.model_validate(dishonest)
 
 
 def test_proposed_oracle_state_mismatch_is_visible(
@@ -315,6 +326,248 @@ def test_contract_invalid_remains_distinct_from_invalid_evaluation_unit(
     assert reviewed.ready_for_scoring
 
 
+def test_disagree_finding_cannot_claim_scoreable_or_ready(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    views, expectations, reviews = v2_bundle
+    review = OracleReviewRecordV2(
+        scenario_id="v2_scenario_001",
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.DISAGREE,
+        reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+        reviewed_admissible_tool_ids=("v2_tool_002",),
+        review_notes="Test-only disagreement.",
+        review_performed_without_policy_outputs=True,
+    )
+    finding = validate_oracle_candidates_v2(
+        views,
+        expectations,
+        _replace_review(reviews, review),
+    )[0]
+
+    for changes in (
+        {"evaluation_unit_status": EvaluationUnitStatusV2.SCOREABLE},
+        {"ready_for_scoring": True},
+        {"ready_for_freeze": True},
+    ):
+        payload = finding.model_dump(mode="json")
+        payload.update(changes)
+        with pytest.raises(ValidationError, match="authoritative v2 derivation"):
+            OracleValidationFindingV2.model_validate(payload)
+
+
+def test_agree_finding_cannot_claim_adjudicated_readiness(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    views, expectations, reviews = v2_bundle
+    review = OracleReviewRecordV2(
+        scenario_id="v2_scenario_001",
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.AGREE,
+        reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+        reviewed_admissible_tool_ids=("v2_tool_001",),
+        review_notes="Test-only agreement.",
+        review_performed_without_policy_outputs=True,
+    )
+    finding = validate_oracle_candidates_v2(
+        views,
+        expectations,
+        _replace_review(reviews, review),
+    )[0]
+    payload = finding.model_dump(mode="json")
+    payload["review_readiness"] = ReviewReadinessV2.ADJUDICATED
+
+    with pytest.raises(ValidationError, match="review_readiness"):
+        OracleValidationFindingV2.model_validate(payload)
+
+
+@pytest.mark.parametrize("readiness_field", ("ready_for_scoring", "ready_for_freeze"))
+def test_pending_finding_cannot_claim_readiness(
+    readiness_field: str,
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    finding = validate_oracle_candidates_v2(*v2_bundle)[0]
+    payload = finding.model_dump(mode="json")
+    payload[readiness_field] = True
+
+    with pytest.raises(ValidationError, match=readiness_field):
+        OracleValidationFindingV2.model_validate(payload)
+
+
+def test_component_match_flags_are_derived_from_proposal_and_relation(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    finding = validate_oracle_candidates_v2(*v2_bundle)[0]
+    payload = finding.model_dump(mode="json")
+    payload["state_matches_expectation"] = False
+
+    with pytest.raises(ValidationError, match="state_matches_expectation"):
+        OracleValidationFindingV2.model_validate(payload)
+
+
+def test_finding_hash_presence_and_source_values_are_enforced(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    views, expectations, reviews = v2_bundle
+    finding = validate_oracle_candidates_v2(views, expectations, reviews)[0]
+    agreement = OracleReviewRecordV2(
+        scenario_id="v2_scenario_001",
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.AGREE,
+        reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+        reviewed_admissible_tool_ids=("v2_tool_001",),
+        review_notes="Test-only agreement.",
+        review_performed_without_policy_outputs=True,
+    )
+    completed = validate_oracle_candidates_v2(
+        views,
+        expectations,
+        _replace_review(reviews, agreement),
+    )[0]
+    missing_hash = completed.model_dump(mode="json")
+    missing_hash["review_hash"] = None
+
+    with pytest.raises(ValidationError, match="present review requires review hash"):
+        OracleValidationFindingV2.model_validate(missing_hash)
+
+    for hash_field in ("expectation_hash", "review_hash"):
+        changed = finding.model_copy(update={hash_field: "0" * 64})
+        with pytest.raises(ArtifactIntegrityError, match=hash_field):
+            verify_oracle_validation_finding_v2(
+                changed,
+                views[0],
+                expectations[0],
+                reviews[0],
+            )
+
+
+def test_invalid_reasons_and_evaluation_status_are_authoritatively_derived(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    views, expectations, reviews = v2_bundle
+    disagreement = OracleReviewRecordV2(
+        scenario_id="v2_scenario_001",
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.DISAGREE,
+        reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+        reviewed_admissible_tool_ids=("v2_tool_002",),
+        review_notes="Test-only disagreement.",
+        review_performed_without_policy_outputs=True,
+    )
+    invalid = validate_oracle_candidates_v2(
+        views,
+        expectations,
+        _replace_review(reviews, disagreement),
+    )[0]
+    no_reasons = invalid.model_dump(mode="json")
+    no_reasons["invalid_unit_reasons"] = []
+    scoreable_with_reasons = validate_oracle_candidates_v2(views, expectations, reviews)[
+        0
+    ].model_dump(mode="json")
+    scoreable_with_reasons["invalid_unit_reasons"] = ["fabricated reason"]
+
+    with pytest.raises(ValidationError, match="invalid_unit_reasons"):
+        OracleValidationFindingV2.model_validate(no_reasons)
+    with pytest.raises(ValidationError, match="invalid_unit_reasons"):
+        OracleValidationFindingV2.model_validate(scoreable_with_reasons)
+
+
+def test_completed_review_without_policy_output_independence_is_invalid(
+    v2_bundle: tuple[
+        tuple[PolicyViewV2, ...],
+        tuple[OracleExpectationV2, ...],
+        tuple[OracleReviewRecordV2, ...],
+    ],
+) -> None:
+    views, expectations, reviews = v2_bundle
+    review = OracleReviewRecordV2(
+        scenario_id="v2_scenario_001",
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.AGREE,
+        reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+        reviewed_admissible_tool_ids=("v2_tool_001",),
+        review_notes="Test-only review without independence.",
+        review_performed_without_policy_outputs=False,
+    )
+    finding = validate_oracle_candidates_v2(
+        views,
+        expectations,
+        _replace_review(reviews, review),
+    )[0]
+
+    assert finding.evaluation_unit_status is EvaluationUnitStatusV2.INVALID
+    assert not finding.ready_for_scoring
+    assert "policy-output independence" in " ".join(finding.invalid_unit_reasons)
+
+
+@pytest.mark.parametrize("tool_ids", ((), ("v2_tool_001", "v2_tool_002")))
+def test_reviewed_unique_state_requires_exactly_one_tool(
+    tool_ids: tuple[str, ...],
+) -> None:
+    with pytest.raises(ValidationError, match="UNIQUE_ADMISSIBLE requires exactly one"):
+        OracleReviewRecordV2(
+            scenario_id="v2_scenario_001",
+            reviewer_role="independent_reviewer",
+            disposition=OracleReviewDispositionV2.DISAGREE,
+            reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+            reviewed_admissible_tool_ids=tool_ids,
+            review_notes="Test-only malformed state/set.",
+            review_performed_without_policy_outputs=True,
+        )
+
+
+def test_reviewed_no_admissible_state_requires_empty_set() -> None:
+    with pytest.raises(ValidationError, match="NO_ADMISSIBLE requires an empty"):
+        OracleReviewRecordV2(
+            scenario_id="v2_scenario_001",
+            reviewer_role="independent_reviewer",
+            disposition=OracleReviewDispositionV2.DISAGREE,
+            reviewed_expected_state=OracleStateV2.NO_ADMISSIBLE,
+            reviewed_admissible_tool_ids=("v2_tool_001",),
+            review_notes="Test-only malformed state/set.",
+            review_performed_without_policy_outputs=True,
+        )
+
+
+def test_complete_adjudicated_state_set_shape_is_enforced() -> None:
+    with pytest.raises(ValidationError, match="UNIQUE_ADMISSIBLE requires exactly one"):
+        OracleReviewRecordV2(
+            scenario_id="v2_scenario_001",
+            reviewer_role="adjudicator",
+            disposition=OracleReviewDispositionV2.ADJUDICATED,
+            reviewed_expected_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+            reviewed_admissible_tool_ids=("v2_tool_002",),
+            review_notes="Test-only malformed adjudication.",
+            review_performed_without_policy_outputs=True,
+            adjudicated_state=OracleStateV2.UNIQUE_ADMISSIBLE,
+            adjudicated_admissible_tool_ids=(),
+        )
+
+
 @pytest.mark.parametrize(
     ("drop_expectation", "drop_review", "reason"),
     (
@@ -341,6 +594,9 @@ def test_missing_authoring_artifact_produces_visible_invalid_unit(
     finding = validate_oracle_candidates_v2(views, expectations, reviews)[0]
 
     assert finding.evaluation_unit_status is EvaluationUnitStatusV2.INVALID
+    assert finding.review_readiness is ReviewReadinessV2.INVALID_UNIT
+    assert not finding.ready_for_scoring
+    assert not finding.ready_for_freeze
     assert reason in finding.invalid_unit_reasons
 
 

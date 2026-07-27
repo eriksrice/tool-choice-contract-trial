@@ -4,6 +4,8 @@
 
 ### Milestone 2B
 
+- harden persisted v2 findings and provisional manifests with authoritative lifecycle derivation and source-aware verification;
+- include complete contract, manifest, witness, invalidity, and rationale evidence in the human review packet;
 - add an isolated `2.0.0` artifact layer without changing frozen v1 schemas, fixtures, commands, registries, or canonical outputs;
 - add typed input-profile, output/evidence-profile, and explicit-prohibition contract semantics;
 - add three synthetic review-candidate families with 12 policy-visible scenarios;

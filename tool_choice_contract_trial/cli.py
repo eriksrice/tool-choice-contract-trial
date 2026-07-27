@@ -153,6 +153,7 @@ def _validate_oracle_candidates_v2(args: argparse.Namespace) -> None:
         args.report,
         policy_views,
         expectations,
+        reviews,
         findings,
         manifest,
     )

@@ -11,6 +11,7 @@ from .v2_models import (
     OracleStateV2,
     PolicyViewV2,
     ToolManifestV2,
+    validate_oracle_state_tool_ids_v2,
 )
 from .v2_registry import (
     AUTHORITY_REQUIREMENT_V2,
@@ -31,11 +32,17 @@ class RelationAssessmentV2:
     witnesses: tuple[ClauseWitnessV2, ...]
     contract_invalid_reasons: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        validate_oracle_state_tool_ids_v2(
+            self.oracle_state,
+            self.admissible_tool_ids,
+            field_label="computed relation state/set",
+        )
+
 
 def _witness(
     *,
     clause_id: str,
-    failure_code: FailureCodeV2,
     tool_id: str,
     expected_values: tuple[str, ...],
     actual_values: tuple[str, ...],
@@ -43,7 +50,7 @@ def _witness(
     clause = V2_RELATION_CLAUSE_REGISTRY[clause_id]
     return ClauseWitnessV2(
         clause_id=clause_id,
-        failure_code=failure_code,
+        failure_code=FailureCodeV2(clause.expected_failure_code),
         tool_id=tool_id,
         contract_fields=clause.contract_fields,
         manifest_fields=clause.manifest_fields,
@@ -65,7 +72,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=CAPABILITY_REQUIREMENT_V2,
-                failure_code=FailureCodeV2.CAPABILITY_MISMATCH,
                 tool_id=tool.tool_id,
                 expected_values=missing_capabilities,
                 actual_values=tool.capabilities,
@@ -76,7 +82,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=AUTHORITY_REQUIREMENT_V2,
-                failure_code=FailureCodeV2.AUTHORITY_MISMATCH,
                 tool_id=tool.tool_id,
                 expected_values=contract.accepted_authority_profiles,
                 actual_values=tool.authority_profiles,
@@ -92,7 +97,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=INPUT_REQUIREMENT_V2,
-                failure_code=FailureCodeV2.INPUT_CONTRACT_MISMATCH,
                 tool_id=tool.tool_id,
                 expected_values=missing_input_profiles,
                 actual_values=tool.accepted_input_profiles,
@@ -108,7 +112,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=OUTPUT_REQUIREMENT_V2,
-                failure_code=FailureCodeV2.OUTPUT_CONTRACT_MISMATCH,
                 tool_id=tool.tool_id,
                 expected_values=missing_output_profiles,
                 actual_values=tool.produced_output_profiles,
@@ -119,7 +122,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=OUTPUT_CITATIONS_V2,
-                failure_code=FailureCodeV2.OUTPUT_CONTRACT_MISMATCH,
                 tool_id=tool.tool_id,
                 expected_values=("citations_provided",),
                 actual_values=("citations_unavailable",),
@@ -130,7 +132,6 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
         witnesses.append(
             _witness(
                 clause_id=TOOL_PROHIBITION_V2,
-                failure_code=FailureCodeV2.EXPLICIT_PROHIBITION,
                 tool_id=tool.tool_id,
                 expected_values=("tool_not_forbidden",),
                 actual_values=(tool.tool_id,),

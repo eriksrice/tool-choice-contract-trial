@@ -8,10 +8,12 @@ from pathlib import Path
 from .errors import ArtifactIntegrityError
 from .v2_models import (
     OracleExpectationV2,
+    OracleReviewRecordV2,
     OracleValidationFindingV2,
     PolicyViewV2,
     ProvisionalBundleManifestV2,
 )
+from .v2_validation import verify_provisional_manifest_v2
 
 
 def _values(values: tuple[str, ...]) -> str:
@@ -25,6 +27,7 @@ def _yes_no(value: bool) -> str:
 def render_oracle_review_packet_v2(
     policy_views: Iterable[PolicyViewV2],
     expectations: Iterable[OracleExpectationV2],
+    reviews: Iterable[OracleReviewRecordV2],
     findings: Iterable[OracleValidationFindingV2],
     manifest: ProvisionalBundleManifestV2,
 ) -> str:
@@ -32,7 +35,15 @@ def render_oracle_review_packet_v2(
 
     view_rows = tuple(policy_views)
     expectation_rows = tuple(expectations)
+    review_rows = tuple(reviews)
     finding_rows = tuple(sorted(findings, key=lambda row: row.scenario_id))
+    verify_provisional_manifest_v2(
+        manifest,
+        view_rows,
+        expectation_rows,
+        review_rows,
+        finding_rows,
+    )
     views_by_id = {view.scenario_id: view for view in view_rows}
     expectations_by_id = {expectation.scenario_id: expectation for expectation in expectation_rows}
     if len(views_by_id) != len(view_rows):
@@ -41,12 +52,24 @@ def render_oracle_review_packet_v2(
         raise ArtifactIntegrityError("duplicate expectation in review packet")
     if {finding.scenario_id for finding in finding_rows} != set(views_by_id):
         raise ArtifactIntegrityError("review packet finding scenario set is incomplete")
+    pending_review_statement = (
+        f"all {manifest.pending_review_count} checked-in reviews are pending"
+        if manifest.pending_review_count == len(manifest.scenario_artifacts)
+        else (
+            f"{manifest.pending_review_count} of {len(manifest.scenario_artifacts)} "
+            "checked-in reviews are pending"
+        )
+    )
 
     lines = [
         "# Tool Choice Contract Trial — Milestone 2B Oracle Review Packet",
         "",
         "> Status: provisional review candidate. Proposed expectations are deterministically "
         "cross-checked but not independently reviewed, adjudicated, or frozen.",
+        "",
+        f"> Review state: {pending_review_statement}. "
+        "No independently reviewed oracle truth or frozen benchmark is claimed, and no policy "
+        "decisions are used.",
         "",
         "## Bundle summary",
         "",
@@ -88,16 +111,30 @@ def render_oracle_review_packet_v2(
         )
         for tool in sorted(view.tools, key=lambda item: item.tool_id):
             lines.append(
-                f"  - `{tool.tool_id}`: inputs {_values(tool.accepted_input_profiles)}; "
+                f"  - `{tool.tool_id}`: capabilities {_values(tool.capabilities)}; "
+                f"authority {_values(tool.authority_profiles)}; inputs "
+                f"{_values(tool.accepted_input_profiles)}; "
                 f"outputs {_values(tool.produced_output_profiles)}; citations "
                 f"{'yes' if tool.provides_citations else 'no'}."
             )
+        lines.append("- Relation witnesses:")
+        if finding.relation_witnesses:
+            for witness in finding.relation_witnesses:
+                lines.append(
+                    f"  - `{witness.tool_id}` / `{witness.clause_id}` "
+                    f"(`{witness.failure_code.value}`): expected "
+                    f"{_values(witness.expected_values)}; actual "
+                    f"{_values(witness.actual_values)}."
+                )
+        else:
+            lines.append("  - none")
         lines.extend(
             [
                 "- Computed relation: "
                 f"`{finding.computed_oracle_state.value}` with "
                 f"{_values(finding.computed_admissible_tool_ids)}; decision "
                 f"`{finding.computed_expected_decision.value}`.",
+                f"- Contract-invalid reasons: {_values(finding.contract_invalid_reasons)}",
                 "- Proposed expectation: "
                 + (
                     f"`{finding.proposed_oracle_state.value}` with "
@@ -106,6 +143,8 @@ def render_oracle_review_packet_v2(
                     if finding.proposed_oracle_state and finding.proposed_expected_decision
                     else "missing."
                 ),
+                "- Authoring rationale: "
+                + (expectation.authoring_rationale if expectation else "missing."),
                 "- Proposal matches computed relation: "
                 f"{_yes_no(finding.expectation_matches_relation)}",
                 f"- Review: `{review_disposition}`; readiness `{finding.review_readiness.value}`.",
@@ -146,12 +185,19 @@ def write_oracle_review_packet_v2(
     path: Path,
     policy_views: Iterable[PolicyViewV2],
     expectations: Iterable[OracleExpectationV2],
+    reviews: Iterable[OracleReviewRecordV2],
     findings: Iterable[OracleValidationFindingV2],
     manifest: ProvisionalBundleManifestV2,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        render_oracle_review_packet_v2(policy_views, expectations, findings, manifest),
+        render_oracle_review_packet_v2(
+            policy_views,
+            expectations,
+            reviews,
+            findings,
+            manifest,
+        ),
         encoding="utf-8",
         newline="\n",
     )

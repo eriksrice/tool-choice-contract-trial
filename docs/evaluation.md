@@ -112,4 +112,6 @@ The validator computes every relation first, then compares it with the proposal 
 - an adjudication is coherent only when both adjudicated values are present and match the independent relation;
 - missing, contradictory, or malformed linkage is either a visible invalid-unit finding or a hard artifact-integrity failure.
 
+One pure lifecycle derivation is authoritative for match flags, review readiness, evaluation-unit status, invalid reasons, and row-level scoring/freeze readiness. Persisted findings carry the review evidence and available-tool provenance needed to reject contradictory serialized states. Before a finding or provisional manifest is used as evidence, source-aware verification recomputes the relation, witnesses, hashes, lifecycle, and manifest contents from the original scenario, expectation, and review artifacts.
+
 `CONTRACT_INVALID` describes the policy-visible task contract and can become ready once coherently reviewed. `EVALUATION_UNIT_INVALID` describes a defective expectation, review, adjudication, or artifact relationship and must not enter policy metrics. The checked-in v2 bundle evaluates no policy and contains no policy decisions. See [Oracle review candidates](oracle-review-candidates.md).

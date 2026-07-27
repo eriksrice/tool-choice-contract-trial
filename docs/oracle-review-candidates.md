@@ -37,7 +37,8 @@ The command processes artifacts in this order:
 3. load and link separately stored proposed expectations and review records;
 4. compare computed and proposed state, admissible set, and contract-faithful response;
 5. classify review readiness and evaluation-unit status;
-6. write canonical findings, a pure Markdown review packet, a provisional manifest, and an invalid-unit register.
+6. source-verify persisted findings and the provisional manifest against all input artifacts;
+7. write canonical findings, a pure Markdown review packet, a provisional manifest, and an invalid-unit register.
 
 Codex-authored expectations are explicitly `PROPOSED`. Checked-in review records are explicitly `PENDING`, contain no invented reviewer identity, and contain no completed-review values. A future reviewer can record:
 
@@ -58,6 +59,8 @@ A completed review must also state whether it was performed without policy outpu
 The typed manifest records schema versions, per-scenario artifact hashes, scenario/expectation/review bundle hashes, the relation-registry hash, computed state counts, pending-review count, invalid-unit count, contract-invalid count, and the fixed bundle status `PROVISIONAL_REVIEW_CANDIDATE`.
 
 Because its values cover the scenario, expectation, review, and finding artifacts, any mutation changes the manifest content and its canonical hash. The manifest records reproducibility and review state; it does not certify the substantive correctness of a proposal.
+
+Schema validation alone does not make a loaded finding or manifest trusted. Before rendering the review packet, the workflow independently recomputes relations, artifact hashes, lifecycle fields, witnesses, counts, and manifest rows from the source scenarios, expectations, and reviews. Any difference is an artifact-integrity failure.
 
 ## Human review gate
 

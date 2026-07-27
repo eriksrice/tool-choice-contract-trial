@@ -168,9 +168,9 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
 | `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
 | `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
-| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `9179ae48af3b5d3011de6652b33aafaa4cd23954d87ed543d6a1e01eb73bd444` |
-| `tests/golden/milestone_2b/oracle_review_packet.md` | `1667cc6793dfa3c7df6d9bcf9a5c5d5bdcfdf63af2b292ccfbd81df6cac63229` |
-| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `9057f85b5266ce3b68e695dccf8896eba75ee0bd9879a6931d7d3350a4b13c58` |
+| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `16d68272edd53d112863d8b43eff76c15578852c74208633557c56ff79db836d` |
+| `tests/golden/milestone_2b/oracle_review_packet.md` | `2f0c014fcfa4d73c259f439ef3c4ff4b10ea31e3dae15df1fcda2ec7b7e42f31` |
+| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `8668d077f7947f26f62eec00df5772b3b1b687b1b8283f850fe8d4dc6d02b888` |
 | `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
@@ -187,4 +187,5 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - the v2 review packet reads only validated scenarios, proposed expectations, findings, and the provisional manifest;
 - comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
 - the provisional manifest covers scenario, expectation, review, finding, bundle, and relation-registry hashes;
+- persisted findings and manifests are source-verified against scenarios, expectations, reviews, and independently recomputed relations before report rendering;
 - volatile run metadata is excluded from canonical artifacts.

@@ -64,12 +64,16 @@ def load_oracle_reviews_v2(path: Path) -> tuple[OracleReviewRecordV2, ...]:
 
 
 def load_oracle_validation_findings_v2(path: Path) -> tuple[OracleValidationFindingV2, ...]:
+    """Load internally coherent findings; source verification remains required for trust."""
+
     findings = _load_v2_artifacts(path, OracleValidationFindingV2)
     _require_unique_scenario_ids(findings, "v2 oracle validation finding")
     return findings
 
 
 def load_provisional_manifest_v2(path: Path) -> ProvisionalBundleManifestV2:
+    """Load schema-valid manifest data; source verification is a separate required step."""
+
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(value, dict):
