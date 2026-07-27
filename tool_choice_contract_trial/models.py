@@ -1,4 +1,4 @@
-"""Authoritative Pydantic models for the audited Milestone 1 contract."""
+"""Authoritative Pydantic models for deterministic evaluation artifacts."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from enum import StrEnum
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from .counterfactual_registry import validate_counterfactual_finding_integrity
 
 SCHEMA_VERSION = "1.0.0"
 SchemaVersion = Literal["1.0.0"]
@@ -590,3 +592,147 @@ class CrossEvaluationFinding(ContractModel):
     def sort_and_reject_duplicates(cls, values: tuple[str, ...], info: object) -> tuple[str, ...]:
         field_name = getattr(info, "field_name", "tuple field")
         return _sorted_unique(values, field_name)
+
+
+class CounterfactualValidationStatus(StrEnum):
+    VALID = "VALID"
+    INVALID = "INVALID"
+
+
+class CounterfactualComparisonSpec(ContractModel):
+    """Evaluator-only declaration of one intended contract intervention."""
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    comparison_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    source_scenario_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    target_scenario_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    declared_changed_clause_ids: tuple[str, ...] = Field(min_length=1)
+    evaluator_notes: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Optional public-safe evaluator notes.",
+    )
+
+    @field_validator("declared_changed_clause_ids")
+    @classmethod
+    def sort_and_reject_duplicate_clauses(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _sorted_unique(values, "declared_changed_clause_ids")
+
+    @model_validator(mode="after")
+    def endpoints_are_distinct(self) -> Self:
+        if self.source_scenario_id == self.target_scenario_id:
+            raise ValueError("source_scenario_id and target_scenario_id must be distinct")
+        return self
+
+
+class CounterfactualFinding(ContractModel):
+    """Validated cross-scenario relation finding, separate from policy failures."""
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    comparison_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    source_scenario_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    target_scenario_id: str = Field(pattern=r"^[a-z0-9_]+$")
+    source_scenario_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target_scenario_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    declared_changed_clause_ids: tuple[str, ...] = Field(min_length=1)
+    observed_changed_contract_paths: tuple[str, ...]
+    validation_status: CounterfactualValidationStatus
+    invalid_comparison_reasons: tuple[str, ...]
+    source_computed_oracle_state: OracleState
+    target_computed_oracle_state: OracleState
+    source_computed_admissible_tool_ids: tuple[str, ...]
+    target_computed_admissible_tool_ids: tuple[str, ...]
+    admissible_set_changed: bool
+    oracle_state_changed: bool
+    unique_admissible_tool_flipped: bool
+    counterfactually_decisive_for_relation: bool
+    individual_relation_decisiveness_established: bool
+    comparison_spec_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    clause_ownership_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @field_validator(
+        "declared_changed_clause_ids",
+        "observed_changed_contract_paths",
+        "invalid_comparison_reasons",
+        "source_computed_admissible_tool_ids",
+        "target_computed_admissible_tool_ids",
+    )
+    @classmethod
+    def sort_and_reject_duplicate_values(
+        cls, values: tuple[str, ...], info: object
+    ) -> tuple[str, ...]:
+        field_name = getattr(info, "field_name", "tuple field")
+        return _sorted_unique(values, field_name)
+
+    @model_validator(mode="after")
+    def finding_semantics_are_consistent(self) -> Self:
+        if self.source_scenario_id == self.target_scenario_id:
+            raise ValueError("source_scenario_id and target_scenario_id must be distinct")
+        validate_counterfactual_finding_integrity(
+            validation_status=self.validation_status.value,
+            declared_clause_ids=self.declared_changed_clause_ids,
+            observed_contract_paths=self.observed_changed_contract_paths,
+            ownership_hash=self.clause_ownership_hash,
+        )
+        if self.validation_status is CounterfactualValidationStatus.VALID:
+            if self.invalid_comparison_reasons:
+                raise ValueError("VALID comparison cannot have invalid-comparison reasons")
+        elif not self.invalid_comparison_reasons:
+            raise ValueError("INVALID comparison requires an invalid-comparison reason")
+
+        set_changed = (
+            self.source_computed_admissible_tool_ids != self.target_computed_admissible_tool_ids
+        )
+        state_changed = self.source_computed_oracle_state is not self.target_computed_oracle_state
+        if self.admissible_set_changed is not set_changed:
+            raise ValueError("admissible_set_changed does not match the computed sets")
+        if self.oracle_state_changed is not state_changed:
+            raise ValueError("oracle_state_changed does not match the computed states")
+
+        for endpoint, state, admissible_tool_ids in (
+            (
+                "source",
+                self.source_computed_oracle_state,
+                self.source_computed_admissible_tool_ids,
+            ),
+            (
+                "target",
+                self.target_computed_oracle_state,
+                self.target_computed_admissible_tool_ids,
+            ),
+        ):
+            if state is OracleState.UNIQUE_ADMISSIBLE and len(admissible_tool_ids) != 1:
+                raise ValueError(f"{endpoint} UNIQUE_ADMISSIBLE requires exactly one tool")
+            if state is OracleState.MULTIPLE_ADMISSIBLE and len(admissible_tool_ids) < 2:
+                raise ValueError(f"{endpoint} MULTIPLE_ADMISSIBLE requires at least two tools")
+            if state in {OracleState.NO_ADMISSIBLE, OracleState.CONTRACT_INVALID} and (
+                admissible_tool_ids
+            ):
+                raise ValueError(f"{endpoint} {state} requires an empty admissible set")
+            if state is OracleState.EVALUATION_UNIT_INVALID:
+                raise ValueError("counterfactual endpoints must come from the relation checker")
+
+        unique_flip = (
+            self.source_computed_oracle_state is OracleState.UNIQUE_ADMISSIBLE
+            and self.target_computed_oracle_state is OracleState.UNIQUE_ADMISSIBLE
+            and len(self.source_computed_admissible_tool_ids) == 1
+            and len(self.target_computed_admissible_tool_ids) == 1
+            and set_changed
+        )
+        if self.unique_admissible_tool_flipped is not unique_flip:
+            raise ValueError("unique_admissible_tool_flipped does not match the computed relation")
+
+        decisive = self.validation_status is CounterfactualValidationStatus.VALID and (
+            set_changed or state_changed
+        )
+        if self.counterfactually_decisive_for_relation is not decisive:
+            raise ValueError(
+                "counterfactually_decisive_for_relation does not match comparison semantics"
+            )
+        individually_decisive = decisive and len(self.declared_changed_clause_ids) == 1
+        if self.individual_relation_decisiveness_established is not individually_decisive:
+            raise ValueError(
+                "individual_relation_decisiveness_established requires a decisive "
+                "singleton intervention"
+            )
+        return self

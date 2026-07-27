@@ -10,6 +10,8 @@ from tool_choice_contract_trial.errors import SchemaInvalidError
 from tool_choice_contract_trial.evaluation import evaluate_case
 from tool_choice_contract_trial.models import (
     ClauseWitness,
+    CounterfactualComparisonSpec,
+    CounterfactualFinding,
     CrossEvaluationFinding,
     EvaluationContext,
     EvaluationResult,
@@ -34,6 +36,8 @@ from tool_choice_contract_trial.policy_io import load_policy_views
         ToolDecision,
         OracleRecord,
         ClauseWitness,
+        CounterfactualComparisonSpec,
+        CounterfactualFinding,
         EvaluationResult,
         CrossEvaluationFinding,
     ),

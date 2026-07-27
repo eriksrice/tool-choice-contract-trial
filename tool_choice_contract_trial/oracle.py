@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .counterfactual_registry import AUTHORITY_CLAUSE
 from .models import (
     ClauseWitness,
     DecisionKind,
@@ -17,7 +18,6 @@ from .models import (
 
 CAPABILITY_CLAUSE = "capability.requirement"
 CITATION_CLAUSE = "citation.requirement"
-AUTHORITY_CLAUSE = "authority.requirement"
 PROHIBITION_CLAUSE = "authority.prohibition"
 CONTRACT_CONSISTENCY_CLAUSE = "contract.semantic_consistency"
 
@@ -93,7 +93,7 @@ def assess_policy_view(view: PolicyView) -> RelationAssessment:
     """Compute the admissible set using only declared contract/manifest fields.
 
     In Milestone 1, decisive clauses are the union of observed incompatibility
-    witnesses. General counterfactual decisiveness is deliberately deferred.
+    witnesses. General decisiveness for the admissibility relation is deliberately deferred.
     """
 
     contradictory_authorities = set(view.contract.accepted_authority_profiles).intersection(

@@ -1,4 +1,4 @@
-"""Single argparse CLI for the authorized deterministic Milestone 1 path."""
+"""Argparse CLI for deterministic evaluation and counterfactual analysis."""
 
 from __future__ import annotations
 
@@ -6,6 +6,9 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+from .counterfactual import analyze_counterfactuals
+from .counterfactual_io import load_counterfactual_specs
+from .counterfactual_reporting import write_counterfactual_markdown_report
 from .evaluation import evaluate_case
 from .evaluation_io import load_scenario_metadata
 from .oracle_io import load_oracle_records
@@ -41,6 +44,12 @@ def _build_parser() -> argparse.ArgumentParser:
     render = subparsers.add_parser("render-report")
     render.add_argument("--results", type=_path, required=True)
     render.add_argument("--report", type=_path, required=True)
+
+    analyze = subparsers.add_parser("analyze-counterfactuals")
+    analyze.add_argument("--scenarios", type=_path, required=True)
+    analyze.add_argument("--comparisons", type=_path, required=True)
+    analyze.add_argument("--findings", type=_path, required=True)
+    analyze.add_argument("--report", type=_path, required=True)
     return parser
 
 
@@ -92,6 +101,14 @@ def _evaluate(args: argparse.Namespace) -> None:
     write_markdown_report(args.report, results)
 
 
+def _analyze_counterfactuals(args: argparse.Namespace) -> None:
+    policy_views = load_policy_views(args.scenarios)
+    comparison_specs = load_counterfactual_specs(args.comparisons)
+    findings = analyze_counterfactuals(policy_views, comparison_specs)
+    write_jsonl(args.findings, findings)
+    write_counterfactual_markdown_report(args.report, findings)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "generate-schemas":
@@ -102,4 +119,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         _evaluate(args)
     elif args.command == "render-report":
         write_markdown_report(args.report, load_result_bundle(args.results))
+    elif args.command == "analyze-counterfactuals":
+        _analyze_counterfactuals(args)
     return 0
