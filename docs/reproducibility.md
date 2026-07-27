@@ -53,6 +53,30 @@ cmp "$replay_dir/run_1/report.md" tests/golden/report.md
 
 Successful `cmp` commands produce no output.
 
+## Counterfactual two-run replay
+
+```bash
+comparison_dir=$(mktemp -d)
+mkdir -p "$comparison_dir/run_1" "$comparison_dir/run_2"
+
+uv run --frozen python -m tool_choice_contract_trial analyze-counterfactuals \
+  --scenarios fixtures/milestone_1/authority_profiles/scenarios.jsonl \
+  --comparisons fixtures/milestone_2a/authority_profiles/comparisons.jsonl \
+  --findings "$comparison_dir/run_1/findings.jsonl" \
+  --report "$comparison_dir/run_1/report.md"
+
+uv run --frozen python -m tool_choice_contract_trial analyze-counterfactuals \
+  --scenarios fixtures/milestone_1/authority_profiles/scenarios.jsonl \
+  --comparisons fixtures/milestone_2a/authority_profiles/comparisons.jsonl \
+  --findings "$comparison_dir/run_2/findings.jsonl" \
+  --report "$comparison_dir/run_2/report.md"
+
+cmp "$comparison_dir/run_1/findings.jsonl" "$comparison_dir/run_2/findings.jsonl"
+cmp "$comparison_dir/run_1/report.md" "$comparison_dir/run_2/report.md"
+cmp "$comparison_dir/run_1/findings.jsonl" tests/golden/counterfactual_findings.jsonl
+cmp "$comparison_dir/run_1/report.md" tests/golden/counterfactual_report.md
+```
+
 ## Offline frozen replay
 
 After the locked environment is available locally:
@@ -69,16 +93,30 @@ uv run --offline --frozen python -m tool_choice_contract_trial evaluate \
 
 cmp "$offline_dir/results.jsonl" tests/golden/results.jsonl
 cmp "$offline_dir/report.md" tests/golden/report.md
+
+uv run --offline --frozen python -m tool_choice_contract_trial \
+  analyze-counterfactuals \
+  --scenarios fixtures/milestone_1/authority_profiles/scenarios.jsonl \
+  --comparisons fixtures/milestone_2a/authority_profiles/comparisons.jsonl \
+  --findings "$offline_dir/counterfactual_findings.jsonl" \
+  --report "$offline_dir/counterfactual_report.md"
+
+cmp "$offline_dir/counterfactual_findings.jsonl" \
+  tests/golden/counterfactual_findings.jsonl
+cmp "$offline_dir/counterfactual_report.md" \
+  tests/golden/counterfactual_report.md
 ```
 
 ## Canonical artifact hashes
 
-For the accepted Milestone 1 fixtures and replay decisions:
+For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 
 | Artifact | SHA-256 |
 | --- | --- |
 | `tests/golden/results.jsonl` | `9744b7aa3ca2c1b538fbc2e78d918941542396fd00108229d7261ec0a9852d3d` |
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
+| `tests/golden/counterfactual_findings.jsonl` | `3b610c647526aef05adbbdeb1416784c1c50c6a1576d406595208c2c3dc0dc9e` |
+| `tests/golden/counterfactual_report.md` | `10009d9d80126ad44195b70937c9806ae09373e811d2109d231e432220f61afa` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
@@ -90,4 +128,6 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - JSON object keys are sorted with fixed separators;
 - every JSONL record has exactly one trailing newline;
 - the report renderer reads only the validated result bundle;
+- the counterfactual report renderer reads only the validated finding bundle;
+- comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
 - volatile run metadata is excluded from canonical artifacts.

@@ -4,18 +4,28 @@ import inspect
 from pathlib import Path
 from typing import get_type_hints
 
-from tool_choice_contract_trial.models import PolicyView, ToolDecision
+from tool_choice_contract_trial.models import (
+    CounterfactualComparisonSpec,
+    PolicyView,
+    ToolDecision,
+)
 from tool_choice_contract_trial.policy import PolicyAdapter, ReplayPolicyAdapter
 
 ORACLE_ONLY_FIELDS = {
     "admissible_tool_ids",
+    "comparison_id",
     "construction_notes",
+    "declared_changed_clause_ids",
     "decisive_clause_ids",
+    "evaluator_notes",
     "expected_decision",
     "family_id",
     "family_label",
     "oracle_state",
     "review_status",
+    "source_scenario_id",
+    "target_scenario_id",
+    "validation_status",
     "variant_label",
     "comparison_group_id",
 }
@@ -44,6 +54,17 @@ def test_policy_view_contains_no_oracle_only_fields(
     for view in policy_views.values():
         visible_keys = _all_keys(view.model_dump(mode="json"))
         assert visible_keys.isdisjoint(ORACLE_ONLY_FIELDS)
+
+
+def test_counterfactual_spec_contains_only_evaluator_declaration_fields() -> None:
+    assert set(CounterfactualComparisonSpec.model_fields) == {
+        "schema_version",
+        "comparison_id",
+        "source_scenario_id",
+        "target_scenario_id",
+        "declared_changed_clause_ids",
+        "evaluator_notes",
+    }
 
 
 def test_policy_visible_identifiers_are_opaque(

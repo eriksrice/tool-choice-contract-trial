@@ -1,0 +1,2 @@
+{"comparison_id":"counterfactual_001","declared_changed_clause_ids":["authority.requirement"],"evaluator_notes":null,"schema_version":"1.0.0","source_scenario_id":"scenario_001","target_scenario_id":"scenario_002"}
+{"comparison_id":"counterfactual_002","declared_changed_clause_ids":["authority.requirement"],"evaluator_notes":null,"schema_version":"1.0.0","source_scenario_id":"scenario_001","target_scenario_id":"scenario_004"}

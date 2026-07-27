@@ -75,6 +75,12 @@ Incompatibilities produce typed `ClauseWitness` records with:
 
 All applicable failure codes remain in the result. `primary_failure_code` is a deterministic precedence winner for concise reporting, not a replacement for the full set. Cross-case findings such as order sensitivity or matched-pair inconsistency remain outside per-case failure codes.
 
-## Milestone 1 decisiveness
+## Incompatibility witnesses and frozen Milestone 1 semantics
 
-The frozen family varies only authority compatibility. Its `decisive_clause_ids` are the union of observed incompatibility witnesses, which is sufficient for this family. A general counterfactual definition of clause decisiveness is a later design gate and is not implemented here.
+The frozen Milestone 1 family varies only authority compatibility. Its `decisive_clause_ids` remain the union of observed incompatibility witnesses, a deliberately family-specific compatibility field. Those IDs explain which clauses make declared tools inadmissible within one scenario; they do not, by themselves, establish cross-scenario causality.
+
+## Counterfactual findings
+
+Milestone 2A adds separate `CounterfactualComparisonSpec` and `CounterfactualFinding` artifacts. The analyzer validates an evaluator-only contract intervention, holds non-owned semantic fields and canonical tool manifests constant, runs the existing relation checker independently at both endpoints, and marks the declared clause set decisive only when the admissible set or computed oracle state changes.
+
+These findings are cross-scenario artifacts. They are not attached to `EvaluationResult`, do not become policy failure codes, and do not use stored oracle labels or policy decisions as their source of truth. See [Counterfactual clause semantics](counterfactual-semantics.md).

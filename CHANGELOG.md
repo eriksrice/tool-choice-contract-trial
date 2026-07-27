@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Milestone 2A
+
+- add evaluator-only counterfactual comparison specifications and typed findings;
+- define explicit `authority.requirement` ownership of `contract.accepted_authority_profiles`;
+- validate structural invariance before attributing counterfactual decisiveness;
+- add deterministic `analyze-counterfactuals` JSONL and Markdown artifacts;
+- preserve frozen Milestone 1 fixtures, schemas, goldens, commands, and hashes;
+- document singleton versus set-level attribution and the one-family claim boundary.
+
 ## v0.1.0-m1 — Milestone 1 Preview
 
 ### Included

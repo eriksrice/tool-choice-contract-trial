@@ -1,8 +1,8 @@
 # Tool Choice Contract Trial
 
-**Status: Milestone 1 Preview — Active Development**
+**Status: Milestone 2A Preview — Active Development**
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable with Pydantic-authoritative schemas, a set-valued oracle, deterministic clause witnesses, canonical JSONL results, and a Markdown report.
+Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable with Pydantic-authoritative schemas, a set-valued oracle, deterministic clause witnesses, canonical JSONL results, and a Markdown report. Milestone 2A separately validates whether a declared contract intervention is counterfactually decisive across existing scenarios.
 
 In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
 
@@ -29,6 +29,11 @@ flowchart LR
 
     S --> J["Canonical results.jsonl"]
     J --> R["Pure Markdown projection"]
+
+    V --> A["Counterfactual analyzer"]
+    Q["Evaluator-only comparison specs"] --> A
+    A --> C
+    C --> F["Canonical findings + report"]
 ```
 
 The adapter receives only `PolicyView`: an opaque scenario ID, the task contract, and tool manifests. Oracle records, expected decisions, admissible sets, family labels, and other evaluator metadata stay on the evaluation side of the boundary. See [Architecture](docs/architecture.md).
@@ -44,7 +49,7 @@ Milestone 1 contains exactly one fictional enterprise evidence-retrieval family 
 | Unsupported authority | `independent_certified` | `NO_ADMISSIBLE` | `NO_TOOL` |
 | Public or approved internal, no tie-break | either profile | `MULTIPLE_ADMISSIBLE` | `INDETERMINATE` |
 
-The first two rows form a minimal pair: changing only the accepted authority profile flips the unique admissible tool.
+The first two rows form a minimal pair: changing only the accepted authority profile flips the unique admissible tool. Milestone 2A formalizes and validates that comparison rather than inferring decisiveness from an incompatibility witness.
 
 ## Plausible but inadmissible example
 
@@ -79,6 +84,19 @@ uv run --frozen python -m tool_choice_contract_trial evaluate \
 
 Inspect `artifacts/preview/report.md` for the case table, minimal-pair flip, and clause-level witnesses.
 
+Analyze the two evaluator-only counterfactual comparisons:
+
+```bash
+mkdir -p artifacts/counterfactuals
+uv run --frozen python -m tool_choice_contract_trial analyze-counterfactuals \
+  --scenarios fixtures/milestone_1/authority_profiles/scenarios.jsonl \
+  --comparisons fixtures/milestone_2a/authority_profiles/comparisons.jsonl \
+  --findings artifacts/counterfactuals/findings.jsonl \
+  --report artifacts/counterfactuals/report.md
+```
+
+The finding bundle and report are independent of stored policy decisions and oracle labels. See [Counterfactual clause semantics](docs/counterfactual-semantics.md).
+
 ## Verification commands
 
 ```bash
@@ -108,9 +126,10 @@ The last row is intentionally not grouped with inadmissible selection: the selec
 ```text
 tool_choice_contract_trial/   Authoritative models, evaluation, I/O, CLI, reporting
 fixtures/milestone_1/         Four policy-visible, metadata, oracle, and replay bundles
+fixtures/milestone_2a/        Evaluator-only comparison specifications over M1 scenarios
 schemas/v1/                   Deterministic JSON Schema projections
 tests/                        Unit, boundary, integrity, schema, and replay tests
-tests/golden/                 Representative canonical JSONL and Markdown artifacts
+tests/golden/                 Frozen M1 and representative M2A canonical artifacts
 docs/                         Public architecture, semantics, reproducibility, limitations
 .github/workflows/ci.yml      Python 3.12 validation workflow
 ```
@@ -123,6 +142,7 @@ docs/                         Public architecture, semantics, reproducibility, l
 - **Complete result algebra:** evaluation status, policy-output status, admissibility, strict outcome, witnesses, and failures are separate validated fields.
 - **Deterministic artifacts:** stable ordering, canonical serialization, no timestamps, and pure report projection.
 - **Declared-manifest boundary:** compatibility is evaluated without tool execution or runtime-truth claims.
+- **Counterfactual restraint:** a clause set is decisive only after a structurally valid intervention changes the independently computed relation.
 
 ## Current limitations
 
@@ -131,18 +151,19 @@ docs/                         Public architecture, semantics, reproducibility, l
 - The included policy output is a trusted stored replay, not a live or independently competitive policy.
 - Tool manifests are declarations; their runtime truth is not checked.
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
-- Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics are intentionally family-specific.
+- Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
+- Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** keep the Milestone 1 preview reproducible, documented, and reviewable.
-2. **Next design gate:** define general counterfactual decisive-clause semantics before adding any new family.
-3. **Only after a separate scope review:** consider broader synthetic coverage and additional recorded policies without weakening the policy/oracle boundary.
+1. **Current:** keep Milestone 1 compatibility frozen while making Milestone 2A counterfactual semantics reproducible and reviewable.
+2. **Next design gate:** review multi-clause minimality, any additional clause ownership, and the evidence required before scenario expansion.
+3. **Only after a separate scope review:** consider broader synthetic coverage or additional recorded policies without weakening the policy/evaluator boundary.
 
 ## Claim boundary
 
-The current version proves deterministic evaluation mechanics on one synthetic family. It does **not** validate a broader benchmark, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
+The current version proves deterministic evaluation and counterfactual-comparison mechanics on one synthetic family. It does **not** validate a broader benchmark, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
 
-Additional technical detail is available in [Evaluation semantics](docs/evaluation.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).
+Additional technical detail is available in [Evaluation semantics](docs/evaluation.md) and [Counterfactual clause semantics](docs/counterfactual-semantics.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).

@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from .errors import SchemaDriftError
 from .models import (
     ClauseWitness,
+    CounterfactualComparisonSpec,
+    CounterfactualFinding,
     CrossEvaluationFinding,
     EvaluationContext,
     EvaluationResult,
@@ -23,6 +25,8 @@ from .models import (
 
 SCHEMA_MODELS: dict[str, type[BaseModel]] = {
     "clause_witness.schema.json": ClauseWitness,
+    "counterfactual_comparison_spec.schema.json": CounterfactualComparisonSpec,
+    "counterfactual_finding.schema.json": CounterfactualFinding,
     "cross_evaluation_finding.schema.json": CrossEvaluationFinding,
     "evaluation_context.schema.json": EvaluationContext,
     "evaluation_result.schema.json": EvaluationResult,
