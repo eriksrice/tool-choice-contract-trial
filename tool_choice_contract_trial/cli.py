@@ -17,6 +17,19 @@ from .policy_io import load_policy_views, load_replay_decisions
 from .reporting import load_result_bundle, write_markdown_report
 from .schema import check_schema_drift, generate_schemas
 from .serialization import write_jsonl
+from .v2_io import (
+    load_oracle_expectations_v2,
+    load_oracle_reviews_v2,
+    load_policy_views_v2,
+)
+from .v2_reporting import write_oracle_review_packet_v2
+from .v2_schema import check_v2_schema_drift, generate_v2_schemas
+from .v2_validation import (
+    build_provisional_manifest_v2,
+    validate_oracle_candidates_v2,
+    write_invalid_unit_register_v2,
+    write_provisional_manifest_v2,
+)
 
 
 def _path(value: str) -> Path:
@@ -32,6 +45,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     check = subparsers.add_parser("check-schemas")
     check.add_argument("--directory", type=_path, required=True)
+
+    generate_v2 = subparsers.add_parser("generate-schemas-v2")
+    generate_v2.add_argument("--output", type=_path, required=True)
+
+    check_v2 = subparsers.add_parser("check-schemas-v2")
+    check_v2.add_argument("--directory", type=_path, required=True)
 
     evaluate = subparsers.add_parser("evaluate")
     evaluate.add_argument("--scenarios", type=_path, required=True)
@@ -50,6 +69,15 @@ def _build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--comparisons", type=_path, required=True)
     analyze.add_argument("--findings", type=_path, required=True)
     analyze.add_argument("--report", type=_path, required=True)
+
+    validate_v2 = subparsers.add_parser("validate-oracle-candidates")
+    validate_v2.add_argument("--scenarios", type=_path, required=True)
+    validate_v2.add_argument("--expectations", type=_path, required=True)
+    validate_v2.add_argument("--reviews", type=_path, required=True)
+    validate_v2.add_argument("--findings", type=_path, required=True)
+    validate_v2.add_argument("--report", type=_path, required=True)
+    validate_v2.add_argument("--manifest", type=_path, required=True)
+    validate_v2.add_argument("--invalid-unit-register", type=_path, required=True)
     return parser
 
 
@@ -109,16 +137,45 @@ def _analyze_counterfactuals(args: argparse.Namespace) -> None:
     write_counterfactual_markdown_report(args.report, findings)
 
 
+def _validate_oracle_candidates_v2(args: argparse.Namespace) -> None:
+    policy_views = load_policy_views_v2(args.scenarios)
+    expectations = load_oracle_expectations_v2(args.expectations)
+    reviews = load_oracle_reviews_v2(args.reviews)
+    findings = validate_oracle_candidates_v2(policy_views, expectations, reviews)
+    manifest = build_provisional_manifest_v2(
+        policy_views,
+        expectations,
+        reviews,
+        findings,
+    )
+    write_jsonl(args.findings, findings)
+    write_oracle_review_packet_v2(
+        args.report,
+        policy_views,
+        expectations,
+        findings,
+        manifest,
+    )
+    write_provisional_manifest_v2(args.manifest, manifest)
+    write_invalid_unit_register_v2(args.invalid_unit_register, findings)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "generate-schemas":
         generate_schemas(args.output)
     elif args.command == "check-schemas":
         check_schema_drift(args.directory)
+    elif args.command == "generate-schemas-v2":
+        generate_v2_schemas(args.output)
+    elif args.command == "check-schemas-v2":
+        check_v2_schema_drift(args.directory)
     elif args.command == "evaluate":
         _evaluate(args)
     elif args.command == "render-report":
         write_markdown_report(args.report, load_result_bundle(args.results))
     elif args.command == "analyze-counterfactuals":
         _analyze_counterfactuals(args)
+    elif args.command == "validate-oracle-candidates":
+        _validate_oracle_candidates_v2(args)
     return 0

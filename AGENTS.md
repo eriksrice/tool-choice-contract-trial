@@ -9,7 +9,9 @@ This repository evaluates whether declared tool manifests satisfy typed task con
 - A policy adapter receives only `PolicyView`: an opaque scenario ID, the task contract, and available tool manifests.
 - Oracle records, comparison specifications, evaluator metadata, expected decisions, and findings remain evaluator-only.
 - The deterministic relation checker, not stored oracle labels or policy decisions, computes admissibility.
+- The v2 relation checker must receive only `PolicyViewV2`; proposed expectations, reviews, family labels, and adjudications remain evaluator-only and are compared only after relation computation.
 - Incompatibility witnesses are per-scenario tool facts; counterfactual findings are cross-scenario evaluator artifacts. Do not turn either into post-hoc policy labels.
+- Keep intentional policy-visible `CONTRACT_INVALID` relations distinct from defective `EVALUATION_UNIT_INVALID` authoring or review relationships.
 - Never mutate fixtures, oracle records, or expected semantics after observing policy output.
 
 ## Types and determinism
@@ -22,6 +24,8 @@ This repository evaluates whether declared tool manifests satisfy typed task con
 ## Compatibility and scope
 
 - Preserve the frozen Milestone 1 fixtures, commands, schemas, goldens, and hashes.
+- Preserve the frozen Milestone 2A comparison fixtures, schemas, counterfactual registry and hash, commands, goldens, and hashes.
+- Keep the v2 `2.0.0` models, schemas, fixtures, registry, and review artifacts explicitly separate from v1; do not build an implicit migration path.
 - Keep new evaluator-only artifacts separate from policy-visible inputs.
 - Do not add a scenario family, contract clause class, execution behavior, or broader claim unless the current task explicitly authorizes it.
 - Stop at the milestone boundary named by the task.
@@ -35,6 +39,8 @@ uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 uv run --frozen python -m tool_choice_contract_trial \
   check-schemas --directory schemas/v1
+uv run --frozen python -m tool_choice_contract_trial \
+  check-schemas-v2 --directory schemas/v2
 ```
 
 For deterministic replay and exact artifact comparisons, follow [docs/reproducibility.md](docs/reproducibility.md).
