@@ -8,6 +8,7 @@ from pathlib import Path
 from .errors import ArtifactIntegrityError
 from .v2_models import (
     OracleExpectationV2,
+    OracleReviewDispositionV2,
     OracleReviewRecordV2,
     OracleValidationFindingV2,
     PolicyViewV2,
@@ -20,7 +21,9 @@ def _values(values: tuple[str, ...]) -> str:
     return ", ".join(f"`{value}`" for value in values) if values else "none"
 
 
-def _yes_no(value: bool) -> str:
+def _yes_no(value: bool | None) -> str:
+    if value is None:
+        return "not recorded"
     return "yes" if value else "no"
 
 
@@ -46,30 +49,57 @@ def render_oracle_review_packet_v2(
     )
     views_by_id = {view.scenario_id: view for view in view_rows}
     expectations_by_id = {expectation.scenario_id: expectation for expectation in expectation_rows}
+    reviews_by_id = {review.scenario_id: review for review in review_rows}
     if len(views_by_id) != len(view_rows):
         raise ArtifactIntegrityError("duplicate policy view in review packet")
     if len(expectations_by_id) != len(expectation_rows):
         raise ArtifactIntegrityError("duplicate expectation in review packet")
+    if len(reviews_by_id) != len(review_rows):
+        raise ArtifactIntegrityError("duplicate review in review packet")
     if {finding.scenario_id for finding in finding_rows} != set(views_by_id):
         raise ArtifactIntegrityError("review packet finding scenario set is incomplete")
-    pending_review_statement = (
-        f"all {manifest.pending_review_count} checked-in reviews are pending"
-        if manifest.pending_review_count == len(manifest.scenario_artifacts)
-        else (
-            f"{manifest.pending_review_count} of {len(manifest.scenario_artifacts)} "
-            "checked-in reviews are pending"
-        )
+    agree_count = sum(
+        review.disposition is OracleReviewDispositionV2.AGREE for review in review_rows
+    )
+    disagree_count = sum(
+        review.disposition is OracleReviewDispositionV2.DISAGREE for review in review_rows
+    )
+    owner_review_count = sum(
+        review.reviewer_role == "owner_reviewer"
+        and review.disposition is not OracleReviewDispositionV2.PENDING
+        for review in review_rows
+    )
+    independent_review_count = sum(
+        review.reviewer_role == "independent_reviewer"
+        and review.disposition is not OracleReviewDispositionV2.PENDING
+        for review in review_rows
+    )
+    unadjudicated_disagreement_count = sum(
+        review.disposition is OracleReviewDispositionV2.DISAGREE
+        and review.adjudicated_state is None
+        and review.adjudicated_admissible_tool_ids is None
+        for review in review_rows
+    )
+    owner_review_statement = (
+        f"complete for all {len(review_rows)} cases"
+        if owner_review_count == len(review_rows)
+        else f"complete for {owner_review_count} of {len(review_rows)} cases"
+    )
+    independent_review_statement = (
+        "Independent review has not been performed."
+        if independent_review_count == 0
+        else f"Independent review is recorded for {independent_review_count} cases."
     )
 
     lines = [
         "# Tool Choice Contract Trial — Milestone 2B Oracle Review Packet",
         "",
-        "> Status: provisional review candidate. Proposed expectations are deterministically "
-        "cross-checked but not independently reviewed, adjudicated, or frozen.",
+        f"> Owner review: {owner_review_statement}; {agree_count} proposals accepted and "
+        f"{disagree_count} disputed. {unadjudicated_disagreement_count} dispute remains "
+        "unadjudicated.",
         "",
-        f"> Review state: {pending_review_statement}. "
-        "No independently reviewed oracle truth or frozen benchmark is claimed, and no policy "
-        "decisions are used.",
+        f"> {independent_review_statement} The bundle is not frozen, and no policy decisions "
+        "were used.",
         "",
         "## Bundle summary",
         "",
@@ -87,10 +117,27 @@ def render_oracle_review_packet_v2(
     for finding in finding_rows:
         view = views_by_id[finding.scenario_id]
         expectation = expectations_by_id.get(finding.scenario_id)
+        review = reviews_by_id.get(finding.scenario_id)
         family_label = expectation.family_label if expectation else "Missing expectation"
         variant_label = expectation.variant_label if expectation else "Missing expectation"
         review_disposition = (
             finding.review_disposition.value if finding.review_disposition else "MISSING"
+        )
+        reviewed_relation = (
+            f"`{review.reviewed_expected_state.value}` with "
+            f"{_values(review.reviewed_admissible_tool_ids)}"
+            if review
+            and review.reviewed_expected_state is not None
+            and review.reviewed_admissible_tool_ids is not None
+            else "not recorded"
+        )
+        adjudication = (
+            f"`{review.adjudicated_state.value}` with "
+            f"{_values(review.adjudicated_admissible_tool_ids)}"
+            if review
+            and review.adjudicated_state is not None
+            and review.adjudicated_admissible_tool_ids is not None
+            else "none"
         )
         contract = view.contract
         lines.extend(
@@ -147,7 +194,13 @@ def render_oracle_review_packet_v2(
                 + (expectation.authoring_rationale if expectation else "missing."),
                 "- Proposal matches computed relation: "
                 f"{_yes_no(finding.expectation_matches_relation)}",
+                f"- Reviewer role: `{review.reviewer_role if review else 'MISSING'}`",
                 f"- Review: `{review_disposition}`; readiness `{finding.review_readiness.value}`.",
+                f"- Reviewed relation: {reviewed_relation}.",
+                "- Review performed without policy outputs: "
+                f"{_yes_no(review.review_performed_without_policy_outputs if review else None)}",
+                "- Review note: " + (review.review_notes if review else "missing."),
+                f"- Adjudication: {adjudication}.",
                 "- Classification: computed contract state "
                 f"`{finding.computed_oracle_state.value}`; evaluation-unit status "
                 f"`{finding.evaluation_unit_status.value}`.",
@@ -162,9 +215,10 @@ def render_oracle_review_packet_v2(
         [
             "## Human review instructions",
             "",
-            "Review the proposed state, admissible set, and rationale without policy outputs. "
-            "Record agreement or disagreement in the separate review artifact; disagreements "
-            "require adjudication before an evaluation unit can become coherent.",
+            "Independent review remains outstanding. It should assess the proposed state, "
+            "admissible set, and rationale without policy outputs and must remain distinct from "
+            "the recorded owner review. The unresolved disagreement requires adjudication before "
+            "that evaluation unit can become coherent.",
             "",
             "## Interpretation boundary",
             "",
