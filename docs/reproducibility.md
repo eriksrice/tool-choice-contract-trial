@@ -21,6 +21,8 @@ uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 uv run --frozen python -m tool_choice_contract_trial \
   check-schemas --directory schemas/v1
+uv run --frozen python -m tool_choice_contract_trial \
+  check-schemas-v2 --directory schemas/v2
 ```
 
 ## Two-run deterministic replay
@@ -77,6 +79,36 @@ cmp "$comparison_dir/run_1/findings.jsonl" tests/golden/counterfactual_findings.
 cmp "$comparison_dir/run_1/report.md" tests/golden/counterfactual_report.md
 ```
 
+## Milestone 2B two-run review-candidate replay
+
+```bash
+review_dir=$(mktemp -d)
+mkdir -p "$review_dir/run_1" "$review_dir/run_2"
+
+for run in run_1 run_2; do
+  uv run --frozen python -m tool_choice_contract_trial \
+    validate-oracle-candidates \
+    --scenarios fixtures/milestone_2b/review_candidate/scenarios.jsonl \
+    --expectations fixtures/milestone_2b/review_candidate/oracle_expectations.jsonl \
+    --reviews fixtures/milestone_2b/review_candidate/oracle_reviews.jsonl \
+    --findings "$review_dir/$run/oracle_validation_findings.jsonl" \
+    --report "$review_dir/$run/oracle_review_packet.md" \
+    --manifest "$review_dir/$run/provisional_bundle_manifest.json" \
+    --invalid-unit-register "$review_dir/$run/invalid_unit_register.jsonl"
+done
+
+for artifact in \
+  oracle_validation_findings.jsonl \
+  oracle_review_packet.md \
+  provisional_bundle_manifest.json \
+  invalid_unit_register.jsonl; do
+  cmp "$review_dir/run_1/$artifact" "$review_dir/run_2/$artifact"
+  cmp "$review_dir/run_1/$artifact" "tests/golden/milestone_2b/$artifact"
+done
+```
+
+The checked-in invalid-unit register is intentionally empty because the 12 public candidates contain no accidental benchmark defects. Focused tests exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
+
 ## Offline frozen replay
 
 After the locked environment is available locally:
@@ -105,6 +137,25 @@ cmp "$offline_dir/counterfactual_findings.jsonl" \
   tests/golden/counterfactual_findings.jsonl
 cmp "$offline_dir/counterfactual_report.md" \
   tests/golden/counterfactual_report.md
+
+uv run --offline --frozen python -m tool_choice_contract_trial \
+  validate-oracle-candidates \
+  --scenarios fixtures/milestone_2b/review_candidate/scenarios.jsonl \
+  --expectations fixtures/milestone_2b/review_candidate/oracle_expectations.jsonl \
+  --reviews fixtures/milestone_2b/review_candidate/oracle_reviews.jsonl \
+  --findings "$offline_dir/oracle_validation_findings.jsonl" \
+  --report "$offline_dir/oracle_review_packet.md" \
+  --manifest "$offline_dir/provisional_bundle_manifest.json" \
+  --invalid-unit-register "$offline_dir/invalid_unit_register.jsonl"
+
+cmp "$offline_dir/oracle_validation_findings.jsonl" \
+  tests/golden/milestone_2b/oracle_validation_findings.jsonl
+cmp "$offline_dir/oracle_review_packet.md" \
+  tests/golden/milestone_2b/oracle_review_packet.md
+cmp "$offline_dir/provisional_bundle_manifest.json" \
+  tests/golden/milestone_2b/provisional_bundle_manifest.json
+cmp "$offline_dir/invalid_unit_register.jsonl" \
+  tests/golden/milestone_2b/invalid_unit_register.jsonl
 ```
 
 ## Canonical artifact hashes
@@ -117,6 +168,10 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
 | `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
 | `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
+| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `16d68272edd53d112863d8b43eff76c15578852c74208633557c56ff79db836d` |
+| `tests/golden/milestone_2b/oracle_review_packet.md` | `2f0c014fcfa4d73c259f439ef3c4ff4b10ea31e3dae15df1fcda2ec7b7e42f31` |
+| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `8668d077f7947f26f62eec00df5772b3b1b687b1b8283f850fe8d4dc6d02b888` |
+| `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
@@ -129,5 +184,8 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - every JSONL record has exactly one trailing newline;
 - the report renderer reads only the validated result bundle;
 - the counterfactual report renderer reads only the validated finding bundle;
+- the v2 review packet reads only validated scenarios, proposed expectations, findings, and the provisional manifest;
 - comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
+- the provisional manifest covers scenario, expectation, review, finding, bundle, and relation-registry hashes;
+- persisted findings and manifests are source-verified against scenarios, expectations, reviews, and independently recomputed relations before report rendering;
 - volatile run metadata is excluded from canonical artifacts.

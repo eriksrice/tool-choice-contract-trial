@@ -10,6 +10,8 @@
 - Frozen inputs can reproduce byte-identical JSONL and Markdown artifacts offline.
 - Two evaluator-only comparisons can validate singleton authority interventions and identify a unique-tool flip or unique-to-multiple state change.
 - Decisiveness for the admissibility relation can remain separate from per-tool incompatibility witnesses.
+- An isolated v2 layer can cross-check proposed input, output/evidence, and explicit-prohibition expectations without exposing them to the relation checker.
+- Review, adjudication, contract invalidity, evaluation-unit invalidity, and freeze readiness can remain distinct deterministic fields.
 
 ## What the current milestones do not demonstrate
 
@@ -22,11 +24,15 @@
 - adversarial isolation of untrusted adapter code;
 - a general ontology of task or tool requirements;
 - minimality or individual causality for multi-clause interventions;
-- counterfactual semantics for any clause other than `authority.requirement`.
+- v2 counterfactual semantics for any clause other than the frozen v1 `authority.requirement` analyzer;
+- independent human review or adjudication of the 12 v2 candidates;
+- a frozen v2 benchmark or policy-comparison result.
 
 ## Coverage limits
 
-The policy-visible fixture bundle remains exactly one fictional evidence-retrieval family with four authority-profile variants. Capability and citation fields are intentionally held constant so authority is decisive. Milestone 2A reuses those scenarios and adds only two evaluator-only comparison specifications. This cannot support claims about other clauses, combinations, or domains.
+The frozen v1 policy-visible bundle remains exactly one fictional evidence-retrieval family with four authority-profile variants. Capability and citation fields are intentionally held constant so authority is decisive. Milestone 2A reuses those scenarios and adds only two evaluator-only comparison specifications.
+
+The separate v2 review candidate contains exactly three fictional enterprise knowledge-work families and 12 cases: four input-profile cases, four output/evidence-profile cases, and four explicit-prohibition cases. Their proposed expectations match the independent computation, but every review record is still `PENDING`. This is authoring and validation coverage, not benchmark evidence.
 
 The checked-in decisions are a trusted replay chosen to exercise mechanics. They are not evidence that one policy outperforms another.
 
@@ -38,6 +44,8 @@ The checked-in decisions are a trusted replay chosen to exercise mechanics. They
 - Policy matched-pair sensitivity is a separate future concept requiring policy decisions at both endpoints; Milestone 2A does not evaluate it.
 - `CONTRACT_INVALID` is an intentional policy-visible defect. `EVALUATION_UNIT_INVALID` is a defective fixture/oracle relationship. They cannot be relabeled interchangeably after observing output.
 - A malformed stored replay row is structurally invalid before scoring; per-case `MALFORMED` represents a normalized observation at an adapter boundary.
+- The v2 input and output pairs are controlled in their authoring design, but the v1 counterfactual analyzer cannot validate them and no v2 counterfactual finding is claimed.
+- A matching v2 proposal with pending review is neither independently reviewed nor ready for scoring or freeze.
 
 ## System boundary
 
@@ -45,4 +53,4 @@ The harness compares data. It does not execute a selected tool, inspect external
 
 ## Roadmap gate
 
-Any broader evaluation must preserve the policy/evaluator separation, define explicit ownership for each added clause, establish claims before adding scenarios, and separately review multi-clause minimality, new families, or policy evaluation. Those decisions are deferred beyond Milestone 2A.
+Any broader evaluation must preserve the policy/evaluator separation, define explicit ownership for each added clause, and establish claims before adding scenarios or policies. Independent review and any required adjudication must precede a v2 freeze decision. V2 counterfactual analysis, policy comparison, benchmark scaling, live-model evaluation, and Milestone 3 remain separate later gates.

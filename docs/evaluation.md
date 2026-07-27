@@ -84,3 +84,34 @@ The frozen Milestone 1 family varies only authority compatibility. Its `decisive
 Milestone 2A adds separate `CounterfactualComparisonSpec` and `CounterfactualFinding` artifacts. The analyzer validates an evaluator-only contract intervention, holds non-owned semantic fields and canonical tool manifests constant, runs the existing relation checker independently at both endpoints, and marks the declared clause set decisive for the admissibility relation only when the admissible set or computed oracle state changes.
 
 These findings are cross-scenario relation artifacts. They are not attached to `EvaluationResult`, do not become policy failure codes, and do not use stored oracle labels or policy decisions as their source of truth. Policy matched-pair sensitivity would require separate endpoint policy decisions and is not evaluated in Milestone 2A. See [Counterfactual clause semantics](counterfactual-semantics.md).
+
+## V2 relation semantics
+
+Milestone 2B is an isolated review-candidate layer. Its relation checker consumes only `PolicyViewV2` and applies six registered clauses:
+
+| Clause | Requirement |
+| --- | --- |
+| `capability.requirement` | Every required capability appears in the manifest. |
+| `authority.requirement` | At least one accepted authority profile appears in the manifest, consistent with v1. |
+| `input.requirement` | Every required input profile appears in the manifest's accepted profiles. |
+| `output.requirement` | Every required output profile appears in the manifest's produced profiles. |
+| `output.citations` | A citations-required contract admits only a citation-capable tool. |
+| `tool.prohibition` | A forbidden tool is inadmissible even if every other clause matches. |
+
+An unavailable ID in `forbidden_tool_ids` is a schema-valid semantic defect. The checker returns `CONTRACT_INVALID`, an empty admissible set, `INVALID_CONTRACT`, and a stable reason. Otherwise it evaluates every available manifest and derives `UNIQUE_ADMISSIBLE`, `MULTIPLE_ADMISSIBLE`, or `NO_ADMISSIBLE` from the resulting set. Clause witnesses identify each manifest-level incompatibility.
+
+## Proposed expectations and review state
+
+`OracleExpectationV2` is a human-authored `PROPOSED` artifact. It records an expected state, admissible set, contract-faithful response, and public rationale, but it is never an input to relation computation. `OracleReviewRecordV2` separately supports `PENDING`, `AGREE`, `DISAGREE`, and `ADJUDICATED` dispositions.
+
+The validator computes every relation first, then compares it with the proposal and review:
+
+- a matching proposal with `PENDING` review is scoreable as an artifact relationship but remains `PENDING_REVIEW`, `ready_for_scoring=false`, and `ready_for_freeze=false`;
+- a completed agreement is coherent only when the proposal, reviewed values, and independent relation agree and policy-output independence was recorded;
+- a completed disagreement without adjudication is `EVALUATION_UNIT_INVALID`;
+- an adjudication is coherent only when both adjudicated values are present and match the independent relation;
+- missing, contradictory, or malformed linkage is either a visible invalid-unit finding or a hard artifact-integrity failure.
+
+One pure lifecycle derivation is authoritative for match flags, review readiness, evaluation-unit status, invalid reasons, and row-level scoring/freeze readiness. Persisted findings carry the review evidence and available-tool provenance needed to reject contradictory serialized states. Before a finding or provisional manifest is used as evidence, source-aware verification recomputes the relation, witnesses, hashes, lifecycle, and manifest contents from the original scenario, expectation, and review artifacts.
+
+`CONTRACT_INVALID` describes the policy-visible task contract and can become ready once coherently reviewed. `EVALUATION_UNIT_INVALID` describes a defective expectation, review, adjudication, or artifact relationship and must not enter policy metrics. The checked-in v2 bundle evaluates no policy and contains no policy decisions. See [Oracle review candidates](oracle-review-candidates.md).

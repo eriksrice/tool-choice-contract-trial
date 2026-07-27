@@ -43,3 +43,8 @@ jobs:
         run: >-
           uv run --frozen python -m tool_choice_contract_trial
           check-schemas --directory schemas/v1
+
+      - name: Check generated v2 schemas
+        run: >-
+          uv run --frozen python -m tool_choice_contract_trial
+          check-schemas-v2 --directory schemas/v2

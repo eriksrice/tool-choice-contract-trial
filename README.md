@@ -1,8 +1,8 @@
 # Tool Choice Contract Trial
 
-**Status: Milestone 2A Preview — Active Development**
+**Status: Milestone 2B Review Candidate — Active Development**
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable with Pydantic-authoritative schemas, a set-valued oracle, deterministic clause witnesses, canonical JSONL results, and a Markdown report. Milestone 2A separately validates whether a declared contract intervention is counterfactually decisive for the admissibility relation across existing scenarios.
+Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2 review candidate for input, output/evidence, and explicit-prohibition clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation.
 
 In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
 
@@ -37,9 +37,15 @@ flowchart LR
     E --> B
     B --> F["Canonical findings.jsonl"]
     F --> G["Pure counterfactual Markdown"]
+
+    V2["PolicyViewV2: v2 contract + manifests"] --> C2["Independent v2 relation checker"]
+    H["Proposed expectations + pending reviews"] --> Q2["Validation + review layer"]
+    C2 --> Q2
+    Q2 --> K["Findings + provisional manifest"]
+    K --> L["Pure review packet"]
 ```
 
-The adapter receives only `PolicyView`: an opaque scenario ID, the task contract, and tool manifests. Oracle records, expected decisions, admissible sets, family labels, and other evaluator metadata stay on the evaluation side of the boundary. See [Architecture](docs/architecture.md).
+The v1 adapter and v2 relation checker receive only their policy-visible views: an opaque scenario ID, a task contract, and tool manifests. Oracle records, proposed expectations, review records, family labels, and other evaluator metadata stay on the evaluation side of the boundary. Milestone 2B loads no policy decisions. See [Architecture](docs/architecture.md).
 
 ## Milestone 1 synthetic family
 
@@ -100,6 +106,22 @@ uv run --frozen python -m tool_choice_contract_trial analyze-counterfactuals \
 
 The finding bundle and report are independent of stored policy decisions and oracle labels. See [Counterfactual clause semantics](docs/counterfactual-semantics.md).
 
+Build the Milestone 2B review packet:
+
+```bash
+mkdir -p artifacts/oracle_review
+uv run --frozen python -m tool_choice_contract_trial validate-oracle-candidates \
+  --scenarios fixtures/milestone_2b/review_candidate/scenarios.jsonl \
+  --expectations fixtures/milestone_2b/review_candidate/oracle_expectations.jsonl \
+  --reviews fixtures/milestone_2b/review_candidate/oracle_reviews.jsonl \
+  --findings artifacts/oracle_review/oracle_validation_findings.jsonl \
+  --report artifacts/oracle_review/oracle_review_packet.md \
+  --manifest artifacts/oracle_review/provisional_bundle_manifest.json \
+  --invalid-unit-register artifacts/oracle_review/invalid_unit_register.jsonl
+```
+
+All 12 checked-in expectations currently match the independent relation computation, but all 12 review records remain `PENDING`. The bundle is therefore a `PROVISIONAL_REVIEW_CANDIDATE`, not independently reviewed or frozen. See [Oracle review candidates](docs/oracle-review-candidates.md).
+
 ## Verification commands
 
 ```bash
@@ -109,6 +131,8 @@ uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 uv run --frozen python -m tool_choice_contract_trial \
   check-schemas --directory schemas/v1
+uv run --frozen python -m tool_choice_contract_trial \
+  check-schemas-v2 --directory schemas/v2
 ```
 
 The full byte-comparison and offline replay procedure is documented in [Reproducibility](docs/reproducibility.md).
@@ -130,9 +154,11 @@ The last row is intentionally not grouped with inadmissible selection: the selec
 tool_choice_contract_trial/   Authoritative models, evaluation, I/O, CLI, reporting
 fixtures/milestone_1/         Four policy-visible, metadata, oracle, and replay bundles
 fixtures/milestone_2a/        Evaluator-only comparison specifications over M1 scenarios
-schemas/v1/                   Deterministic JSON Schema projections
+fixtures/milestone_2b/        Twelve v2 scenarios, proposals, and pending reviews
+schemas/v1/                   Frozen v1 deterministic JSON Schema projections
+schemas/v2/                   Isolated v2 deterministic JSON Schema projections
 tests/                        Unit, boundary, integrity, schema, and replay tests
-tests/golden/                 Frozen M1 and representative M2A canonical artifacts
+tests/golden/                 Frozen M1/M2A and provisional M2B canonical artifacts
 docs/                         Public architecture, semantics, reproducibility, limitations
 .github/workflows/ci.yml      Python 3.12 validation workflow
 ```
@@ -146,27 +172,31 @@ docs/                         Public architecture, semantics, reproducibility, l
 - **Deterministic artifacts:** stable ordering, canonical serialization, no timestamps, and pure report projection.
 - **Declared-manifest boundary:** compatibility is evaluated without tool execution or runtime-truth claims.
 - **Counterfactual restraint:** a clause set is decisive for the admissibility relation only after a structurally valid intervention changes that independently computed relation.
+- **Reviewable oracle authoring:** proposed expectations, computed relations, independent reviews, and adjudication remain separate artifacts.
+- **Versioned compatibility:** frozen v1 behavior and artifacts are not silently changed by v2 clause expansion.
 
 ## Current limitations
 
-- One synthetic family and four cases are too small to establish benchmark validity or cross-domain performance.
-- Only authority-profile compatibility is exercised by the frozen family.
+- The frozen v1 evaluation covers one synthetic family and four cases; the v2 layer adds three proposed synthetic families and 12 review-candidate cases. Neither establishes benchmark validity or cross-domain performance.
+- V2 cases exercise only input profiles, output/evidence profiles, explicit prohibition, and the compatible v1 capability/authority semantics.
 - The included policy output is a trusted stored replay, not a live or independently competitive policy.
 - Tool manifests are declarations; their runtime truth is not checked.
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
 - Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
 - Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
+- Milestone 2B expectations have not been independently reviewed or frozen, and no policy decisions are evaluated against them.
+- The v2 controlled pairs have not been processed by the v1-only Milestone 2A counterfactual analyzer.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** keep Milestone 1 compatibility frozen while making Milestone 2A counterfactual semantics reproducible and reviewable.
-2. **Next design gate:** review multi-clause minimality, any additional clause ownership, and the evidence required before scenario expansion.
-3. **Only after a separate scope review:** consider broader synthetic coverage or additional recorded policies without weakening the policy/evaluator boundary.
+1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the v2 oracle candidates for independent human review.
+2. **Next design gate:** adjudicate any review disagreements and decide whether the candidate is suitable to freeze.
+3. **Only after a separate scope review:** consider v2 counterfactual analysis, policy comparison, or broader synthetic coverage without weakening the policy/evaluator boundary.
 
 ## Claim boundary
 
-The current version proves deterministic evaluation and counterfactual-comparison mechanics on one synthetic family. It does **not** validate a broader benchmark, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
+The current version proves frozen v1 evaluation and counterfactual-comparison mechanics on one synthetic authority family, plus deterministic v2 oracle-authoring and review mechanics on three proposed synthetic families. It does **not** establish independently reviewed v2 oracle truth, a frozen or broader benchmark, policy-comparison results, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
 
-Additional technical detail is available in [Evaluation semantics](docs/evaluation.md) and [Counterfactual clause semantics](docs/counterfactual-semantics.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).
+Additional technical detail is available in [Evaluation semantics](docs/evaluation.md), [Counterfactual clause semantics](docs/counterfactual-semantics.md), and [Oracle review candidates](docs/oracle-review-candidates.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).
