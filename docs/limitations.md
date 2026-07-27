@@ -9,7 +9,7 @@
 - Multiple-admissible selection can remain distinct from inadmissible selection.
 - Frozen inputs can reproduce byte-identical JSONL and Markdown artifacts offline.
 - Two evaluator-only comparisons can validate singleton authority interventions and identify a unique-tool flip or unique-to-multiple state change.
-- Counterfactual decisiveness can remain separate from per-tool incompatibility witnesses.
+- Decisiveness for the admissibility relation can remain separate from per-tool incompatibility witnesses.
 
 ## What the current milestones do not demonstrate
 
@@ -35,6 +35,7 @@ The checked-in decisions are a trusted replay chosen to exercise mechanics. They
 - Schema v1 has no typed tie-break rule. A selected member of a multiple-admissible set is `ADMISSIBLE_BUT_UNJUSTIFIED`; `INDETERMINATE` is the strictly contract-faithful response.
 - Milestone 1 decisive-clause IDs remain observed incompatibility-witness unions for compatibility. Milestone 2A counterfactual findings use separate validated comparison semantics.
 - Only singleton authority interventions are exercised. A future multi-clause comparison is set-level unless proper-subset interventions establish minimality.
+- Policy matched-pair sensitivity is a separate future concept requiring policy decisions at both endpoints; Milestone 2A does not evaluate it.
 - `CONTRACT_INVALID` is an intentional policy-visible defect. `EVALUATION_UNIT_INVALID` is a defective fixture/oracle relationship. They cannot be relabeled interchangeably after observing output.
 - A malformed stored replay row is structurally invalid before scoring; per-case `MALFORMED` represents a normalized observation at an adapter boundary.
 

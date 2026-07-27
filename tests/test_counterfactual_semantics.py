@@ -6,16 +6,15 @@ import pytest
 from pydantic import ValidationError
 
 from tool_choice_contract_trial.counterfactual import (
-    CLAUSE_FIELD_OWNERSHIP,
     analyze_comparison,
     analyze_counterfactuals,
     establishes_individual_decisiveness,
 )
 from tool_choice_contract_trial.counterfactual_io import load_counterfactual_specs
+from tool_choice_contract_trial.counterfactual_registry import CLAUSE_FIELD_OWNERSHIP
 from tool_choice_contract_trial.errors import ArtifactIntegrityError
 from tool_choice_contract_trial.models import (
     CounterfactualComparisonSpec,
-    CounterfactualFinding,
     CounterfactualValidationStatus,
     OracleState,
     PolicyView,
@@ -76,8 +75,8 @@ def test_valid_singleton_authority_comparison_flips_unique_tool(
     assert finding.source_computed_admissible_tool_ids == ("evidence_tool_01",)
     assert finding.target_computed_admissible_tool_ids == ("evidence_tool_02",)
     assert finding.unique_admissible_tool_flipped
-    assert finding.counterfactually_decisive
-    assert finding.individual_decisiveness_established
+    assert finding.counterfactually_decisive_for_relation
+    assert finding.individual_relation_decisiveness_established
 
 
 def test_clause_ownership_registry_is_explicit_and_milestone_bounded() -> None:
@@ -105,7 +104,7 @@ def test_valid_authority_comparison_changes_unique_to_multiple(
     assert finding.admissible_set_changed
     assert finding.oracle_state_changed
     assert not finding.unique_admissible_tool_flipped
-    assert finding.counterfactually_decisive
+    assert finding.counterfactually_decisive_for_relation
 
 
 def test_declared_clause_without_actual_field_change_is_invalid(
@@ -121,8 +120,9 @@ def test_declared_clause_without_actual_field_change_is_invalid(
     assert finding.validation_status is CounterfactualValidationStatus.INVALID
     assert finding.invalid_comparison_reasons == (
         "declared clause has no field change: authority.requirement",
+        "no observed contract path",
     )
-    assert not finding.counterfactually_decisive
+    assert not finding.counterfactually_decisive_for_relation
 
 
 def test_actual_field_difference_outside_declared_clause_is_invalid(
@@ -159,7 +159,7 @@ def test_unknown_clause_id_fails_comparison_validation(
 
     assert finding.validation_status is CounterfactualValidationStatus.INVALID
     assert "unknown clause ID: unknown.requirement" in finding.invalid_comparison_reasons
-    assert not finding.counterfactually_decisive
+    assert not finding.counterfactually_decisive_for_relation
 
 
 def test_tool_manifest_drift_is_invalid(policy_views: dict[str, PolicyView]) -> None:
@@ -253,33 +253,16 @@ def test_valid_intervention_can_leave_relation_unchanged(
     assert finding.validation_status is CounterfactualValidationStatus.VALID
     assert not finding.admissible_set_changed
     assert not finding.oracle_state_changed
-    assert not finding.counterfactually_decisive
-    assert not finding.individual_decisiveness_established
+    assert not finding.counterfactually_decisive_for_relation
+    assert not finding.individual_relation_decisiveness_established
 
 
-def test_multi_clause_intervention_does_not_establish_individual_decisiveness(
-    policy_views: dict[str, PolicyView],
-) -> None:
+def test_multi_clause_intervention_does_not_establish_individual_decisiveness() -> None:
     assert not establishes_individual_decisiveness(
         comparison_valid=True,
         relation_changed=True,
         declared_changed_clause_ids=("clause.a", "clause.b"),
     )
-    singleton = analyze_comparison(
-        _spec("scenario_001", "scenario_002"),
-        policy_views["scenario_001"],
-        policy_views["scenario_002"],
-    )
-    payload = singleton.model_dump(mode="json")
-    payload["declared_changed_clause_ids"] = ["clause.a", "clause.b"]
-    payload["individual_decisiveness_established"] = False
-    set_level = CounterfactualFinding.model_validate(payload)
-    assert set_level.counterfactually_decisive
-    assert not set_level.individual_decisiveness_established
-
-    payload["individual_decisiveness_established"] = True
-    with pytest.raises(ValidationError, match="decisive singleton intervention"):
-        CounterfactualFinding.model_validate(payload)
 
 
 def test_semantically_irrelevant_record_and_tool_order_are_canonical(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .counterfactual_registry import validate_counterfactual_finding_integrity
 from .models import CounterfactualFinding, CounterfactualValidationStatus
 
 
@@ -19,6 +20,13 @@ def render_counterfactual_markdown(findings: tuple[CounterfactualFinding, ...]) 
     """Render only values present in the finding bundle."""
 
     ordered = tuple(sorted(findings, key=lambda finding: finding.comparison_id))
+    for finding in ordered:
+        validate_counterfactual_finding_integrity(
+            validation_status=finding.validation_status.value,
+            declared_clause_ids=finding.declared_changed_clause_ids,
+            observed_contract_paths=finding.observed_changed_contract_paths,
+            ownership_hash=finding.clause_ownership_hash,
+        )
     lines = [
         "# Tool Choice Contract Trial — Milestone 2A Counterfactual Findings",
         "",
@@ -66,10 +74,10 @@ def render_counterfactual_markdown(findings: tuple[CounterfactualFinding, ...]) 
                 f"- Oracle state changed: {_yes_no(finding.oracle_state_changed)}",
                 "- Unique admissible tool flipped: "
                 f"{_yes_no(finding.unique_admissible_tool_flipped)}",
-                "- Declared clause set counterfactually decisive: "
-                f"{_yes_no(finding.counterfactually_decisive)}",
-                "- Individual decisiveness established: "
-                f"{_yes_no(finding.individual_decisiveness_established)}",
+                "- Declared clause set counterfactually decisive for the admissibility relation: "
+                f"{_yes_no(finding.counterfactually_decisive_for_relation)}",
+                "- Individual relation decisiveness established: "
+                f"{_yes_no(finding.individual_relation_decisiveness_established)}",
                 "",
             ]
         )

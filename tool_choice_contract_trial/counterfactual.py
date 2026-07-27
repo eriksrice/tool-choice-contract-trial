@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from typing import Any
 
+from .counterfactual_registry import (
+    ACTIVE_CLAUSE_OWNERSHIP_HASH,
+    validate_clause_path_relationship,
+)
 from .errors import ArtifactIntegrityError
 from .models import (
     CounterfactualComparisonSpec,
@@ -14,26 +18,8 @@ from .models import (
     PolicyView,
     TaskContract,
 )
-from .oracle import AUTHORITY_CLAUSE, assess_policy_view
+from .oracle import assess_policy_view
 from .serialization import canonical_hash
-
-CLAUSE_FIELD_OWNERSHIP: dict[str, tuple[str, ...]] = {
-    AUTHORITY_CLAUSE: ("contract.accepted_authority_profiles",),
-}
-
-
-def clause_ownership_hash(
-    ownership: Mapping[str, tuple[str, ...]] = CLAUSE_FIELD_OWNERSHIP,
-) -> str:
-    """Hash the explicit clause-to-contract-field ownership registry."""
-
-    return canonical_hash(
-        {
-            "clause_field_ownership": {
-                clause_id: tuple(sorted(paths)) for clause_id, paths in sorted(ownership.items())
-            }
-        }
-    )
 
 
 def _semantic_policy_view_data(view: PolicyView) -> dict[str, Any]:
@@ -50,7 +36,7 @@ def _semantic_policy_view_data(view: PolicyView) -> dict[str, Any]:
     }
 
 
-def semantic_policy_view_hash(view: PolicyView) -> str:
+def policy_view_artifact_hash(view: PolicyView) -> str:
     """Hash a policy view with manifest record order normalized by opaque tool ID."""
 
     return canonical_hash(_semantic_policy_view_data(view))
@@ -90,8 +76,6 @@ def analyze_comparison(
     spec: CounterfactualComparisonSpec,
     source: PolicyView,
     target: PolicyView,
-    *,
-    ownership: Mapping[str, tuple[str, ...]] = CLAUSE_FIELD_OWNERSHIP,
 ) -> CounterfactualFinding:
     """Validate one comparison and compute its endpoint relation independently."""
 
@@ -117,19 +101,12 @@ def analyze_comparison(
     if _canonical_tool_catalog(source) != _canonical_tool_catalog(target):
         invalid_reasons.append("tool manifests differ")
 
-    declared_owned_paths: set[str] = set()
-    for clause_id in spec.declared_changed_clause_ids:
-        owned_paths = ownership.get(clause_id)
-        if owned_paths is None:
-            invalid_reasons.append(f"unknown clause ID: {clause_id}")
-            continue
-        declared_owned_paths.update(owned_paths)
-        if not set(owned_paths).intersection(observed_paths):
-            invalid_reasons.append(f"declared clause has no field change: {clause_id}")
-
-    for path in observed_paths:
-        if path not in declared_owned_paths:
-            invalid_reasons.append(f"undeclared contract change: {path}")
+    invalid_reasons.extend(
+        validate_clause_path_relationship(
+            spec.declared_changed_clause_ids,
+            observed_paths,
+        ).reasons
+    )
 
     ordered_reasons = tuple(sorted(set(invalid_reasons)))
     comparison_valid = not ordered_reasons
@@ -143,8 +120,8 @@ def analyze_comparison(
         comparison_id=spec.comparison_id,
         source_scenario_id=source.scenario_id,
         target_scenario_id=target.scenario_id,
-        source_scenario_hash=semantic_policy_view_hash(source),
-        target_scenario_hash=semantic_policy_view_hash(target),
+        source_scenario_hash=policy_view_artifact_hash(source),
+        target_scenario_hash=policy_view_artifact_hash(target),
         declared_changed_clause_ids=spec.declared_changed_clause_ids,
         observed_changed_contract_paths=observed_paths,
         validation_status=(
@@ -164,14 +141,14 @@ def analyze_comparison(
             and target_relation.oracle_state is OracleState.UNIQUE_ADMISSIBLE
             and admissible_set_changed
         ),
-        counterfactually_decisive=comparison_valid and relation_changed,
-        individual_decisiveness_established=establishes_individual_decisiveness(
+        counterfactually_decisive_for_relation=comparison_valid and relation_changed,
+        individual_relation_decisiveness_established=establishes_individual_decisiveness(
             comparison_valid=comparison_valid,
             relation_changed=relation_changed,
             declared_changed_clause_ids=spec.declared_changed_clause_ids,
         ),
         comparison_spec_hash=canonical_hash(spec),
-        clause_ownership_hash=clause_ownership_hash(ownership),
+        clause_ownership_hash=ACTIVE_CLAUSE_OWNERSHIP_HASH,
     )
 
 

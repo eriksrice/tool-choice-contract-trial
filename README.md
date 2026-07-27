@@ -2,7 +2,7 @@
 
 **Status: Milestone 2A Preview — Active Development**
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable with Pydantic-authoritative schemas, a set-valued oracle, deterministic clause witnesses, canonical JSONL results, and a Markdown report. Milestone 2A separately validates whether a declared contract intervention is counterfactually decisive across existing scenarios.
+Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable with Pydantic-authoritative schemas, a set-valued oracle, deterministic clause witnesses, canonical JSONL results, and a Markdown report. Milestone 2A separately validates whether a declared contract intervention is counterfactually decisive for the admissibility relation across existing scenarios.
 
 In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
 
@@ -30,10 +30,13 @@ flowchart LR
     S --> J["Canonical results.jsonl"]
     J --> R["Pure Markdown projection"]
 
-    V --> A["Counterfactual analyzer"]
+    V --> A["Counterfactual analyzer: structural validation"]
     Q["Evaluator-only comparison specs"] --> A
-    A --> C
-    C --> F["Canonical findings + report"]
+    A --> E["Relation checker at both endpoints"]
+    A --> B["Analyzer assembles findings"]
+    E --> B
+    B --> F["Canonical findings.jsonl"]
+    F --> G["Pure counterfactual Markdown"]
 ```
 
 The adapter receives only `PolicyView`: an opaque scenario ID, the task contract, and tool manifests. Oracle records, expected decisions, admissible sets, family labels, and other evaluator metadata stay on the evaluation side of the boundary. See [Architecture](docs/architecture.md).
@@ -142,7 +145,7 @@ docs/                         Public architecture, semantics, reproducibility, l
 - **Complete result algebra:** evaluation status, policy-output status, admissibility, strict outcome, witnesses, and failures are separate validated fields.
 - **Deterministic artifacts:** stable ordering, canonical serialization, no timestamps, and pure report projection.
 - **Declared-manifest boundary:** compatibility is evaluated without tool execution or runtime-truth claims.
-- **Counterfactual restraint:** a clause set is decisive only after a structurally valid intervention changes the independently computed relation.
+- **Counterfactual restraint:** a clause set is decisive for the admissibility relation only after a structurally valid intervention changes that independently computed relation.
 
 ## Current limitations
 

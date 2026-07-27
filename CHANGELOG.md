@@ -6,7 +6,8 @@
 
 - add evaluator-only counterfactual comparison specifications and typed findings;
 - define explicit `authority.requirement` ownership of `contract.accepted_authority_profiles`;
-- validate structural invariance before attributing counterfactual decisiveness;
+- validate structural invariance before attributing decisiveness for the admissibility relation;
+- require findings to match the active clause/path registry and relation-qualified fields;
 - add deterministic `analyze-counterfactuals` JSONL and Markdown artifacts;
 - preserve frozen Milestone 1 fixtures, schemas, goldens, commands, and hashes;
 - document singleton versus set-level attribution and the one-family claim boundary.

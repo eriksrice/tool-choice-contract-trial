@@ -7,6 +7,8 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .counterfactual_registry import validate_counterfactual_finding_integrity
+
 SCHEMA_VERSION = "1.0.0"
 SchemaVersion = Literal["1.0.0"]
 
@@ -643,8 +645,8 @@ class CounterfactualFinding(ContractModel):
     admissible_set_changed: bool
     oracle_state_changed: bool
     unique_admissible_tool_flipped: bool
-    counterfactually_decisive: bool
-    individual_decisiveness_established: bool
+    counterfactually_decisive_for_relation: bool
+    individual_relation_decisiveness_established: bool
     comparison_spec_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     clause_ownership_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
 
@@ -666,6 +668,12 @@ class CounterfactualFinding(ContractModel):
     def finding_semantics_are_consistent(self) -> Self:
         if self.source_scenario_id == self.target_scenario_id:
             raise ValueError("source_scenario_id and target_scenario_id must be distinct")
+        validate_counterfactual_finding_integrity(
+            validation_status=self.validation_status.value,
+            declared_clause_ids=self.declared_changed_clause_ids,
+            observed_contract_paths=self.observed_changed_contract_paths,
+            ownership_hash=self.clause_ownership_hash,
+        )
         if self.validation_status is CounterfactualValidationStatus.VALID:
             if self.invalid_comparison_reasons:
                 raise ValueError("VALID comparison cannot have invalid-comparison reasons")
@@ -717,11 +725,14 @@ class CounterfactualFinding(ContractModel):
         decisive = self.validation_status is CounterfactualValidationStatus.VALID and (
             set_changed or state_changed
         )
-        if self.counterfactually_decisive is not decisive:
-            raise ValueError("counterfactually_decisive does not match comparison semantics")
-        individually_decisive = decisive and len(self.declared_changed_clause_ids) == 1
-        if self.individual_decisiveness_established is not individually_decisive:
+        if self.counterfactually_decisive_for_relation is not decisive:
             raise ValueError(
-                "individual_decisiveness_established requires a decisive singleton intervention"
+                "counterfactually_decisive_for_relation does not match comparison semantics"
+            )
+        individually_decisive = decisive and len(self.declared_changed_clause_ids) == 1
+        if self.individual_relation_decisiveness_established is not individually_decisive:
+            raise ValueError(
+                "individual_relation_decisiveness_established requires a decisive "
+                "singleton intervention"
             )
         return self

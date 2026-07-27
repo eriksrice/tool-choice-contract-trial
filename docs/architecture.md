@@ -61,7 +61,8 @@ The deterministic bundle excludes volatile metadata. Serialization uses UTF-8, s
 - `tool_choice_contract_trial/models.py`: authoritative types and cross-field invariants.
 - `tool_choice_contract_trial/oracle.py`: declared-manifest relation assessment.
 - `tool_choice_contract_trial/evaluation.py`: per-case evaluation and diagnostics.
-- `tool_choice_contract_trial/counterfactual.py`: comparison validation and decisiveness.
+- `tool_choice_contract_trial/counterfactual_registry.py`: supported clauses, owned paths, and finding-integrity authority.
+- `tool_choice_contract_trial/counterfactual.py`: comparison validation and admissibility-relation decisiveness.
 - `tool_choice_contract_trial/counterfactual_reporting.py`: pure finding projection.
 - `tool_choice_contract_trial/policy.py`: replay adapter.
 - `tool_choice_contract_trial/serialization.py`: canonical JSON and hashing.

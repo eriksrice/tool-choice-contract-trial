@@ -16,8 +16,8 @@
 - Admissible set changed: yes
 - Oracle state changed: no
 - Unique admissible tool flipped: yes
-- Declared clause set counterfactually decisive: yes
-- Individual decisiveness established: yes
+- Declared clause set counterfactually decisive for the admissibility relation: yes
+- Individual relation decisiveness established: yes
 
 ### `counterfactual_002`
 
@@ -31,8 +31,8 @@
 - Admissible set changed: yes
 - Oracle state changed: yes
 - Unique admissible tool flipped: no
-- Declared clause set counterfactually decisive: yes
-- Individual decisiveness established: yes
+- Declared clause set counterfactually decisive for the admissibility relation: yes
+- Individual relation decisiveness established: yes
 
 ## Why this is not an incompatibility witness
 

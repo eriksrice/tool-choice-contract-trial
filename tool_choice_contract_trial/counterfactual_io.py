@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
+from .counterfactual_registry import validate_counterfactual_finding_integrity
 from .errors import ArtifactIntegrityError, SchemaInvalidError
 from .models import CounterfactualComparisonSpec, CounterfactualFinding
 from .serialization import read_jsonl_objects
@@ -54,5 +55,12 @@ def load_counterfactual_specs(path: Path) -> tuple[CounterfactualComparisonSpec,
 
 def load_counterfactual_findings(path: Path) -> tuple[CounterfactualFinding, ...]:
     findings = _load_counterfactual_artifacts(path, CounterfactualFinding)
+    for finding in findings:
+        validate_counterfactual_finding_integrity(
+            validation_status=finding.validation_status.value,
+            declared_clause_ids=finding.declared_changed_clause_ids,
+            observed_contract_paths=finding.observed_changed_contract_paths,
+            ownership_hash=finding.clause_ownership_hash,
+        )
     _require_unique_comparison_ids(findings, "counterfactual finding")
     return findings

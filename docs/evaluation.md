@@ -81,6 +81,6 @@ The frozen Milestone 1 family varies only authority compatibility. Its `decisive
 
 ## Counterfactual findings
 
-Milestone 2A adds separate `CounterfactualComparisonSpec` and `CounterfactualFinding` artifacts. The analyzer validates an evaluator-only contract intervention, holds non-owned semantic fields and canonical tool manifests constant, runs the existing relation checker independently at both endpoints, and marks the declared clause set decisive only when the admissible set or computed oracle state changes.
+Milestone 2A adds separate `CounterfactualComparisonSpec` and `CounterfactualFinding` artifacts. The analyzer validates an evaluator-only contract intervention, holds non-owned semantic fields and canonical tool manifests constant, runs the existing relation checker independently at both endpoints, and marks the declared clause set decisive for the admissibility relation only when the admissible set or computed oracle state changes.
 
-These findings are cross-scenario artifacts. They are not attached to `EvaluationResult`, do not become policy failure codes, and do not use stored oracle labels or policy decisions as their source of truth. See [Counterfactual clause semantics](counterfactual-semantics.md).
+These findings are cross-scenario relation artifacts. They are not attached to `EvaluationResult`, do not become policy failure codes, and do not use stored oracle labels or policy decisions as their source of truth. Policy matched-pair sensitivity would require separate endpoint policy decisions and is not evaluated in Milestone 2A. See [Counterfactual clause semantics](counterfactual-semantics.md).

@@ -65,7 +65,8 @@ def test_counterfactual_report_explains_required_semantics(tmp_path: Path) -> No
     assert "contract.accepted_authority_profiles" in report
     assert "UNIQUE_ADMISSIBLE" in report
     assert "MULTIPLE_ADMISSIBLE" in report
-    assert "counterfactually decisive: yes" in report
+    assert "counterfactually decisive for the admissibility relation: yes" in report
+    assert "Individual relation decisiveness established: yes" in report
     assert "not an incompatibility witness" in report
     assert "existing synthetic authority family only" in report
 

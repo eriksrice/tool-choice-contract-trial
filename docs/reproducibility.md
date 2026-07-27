@@ -115,8 +115,8 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | --- | --- |
 | `tests/golden/results.jsonl` | `9744b7aa3ca2c1b538fbc2e78d918941542396fd00108229d7261ec0a9852d3d` |
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
-| `tests/golden/counterfactual_findings.jsonl` | `3b610c647526aef05adbbdeb1416784c1c50c6a1576d406595208c2c3dc0dc9e` |
-| `tests/golden/counterfactual_report.md` | `10009d9d80126ad44195b70937c9806ae09373e811d2109d231e432220f61afa` |
+| `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
+| `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
