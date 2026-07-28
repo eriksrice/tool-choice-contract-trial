@@ -113,9 +113,9 @@ def test_v2_review_packet_and_manifest_state_the_review_boundary(tmp_path: Path)
     manifest = load_provisional_manifest_v2(outputs["manifest"])
     invalid_rows = [json.loads(line) for line in outputs["invalid"].read_text().splitlines()]
 
-    assert "Owner review: complete for 11 of 12 current candidates" in report
-    assert "11 proposals accepted" in report
-    assert "The replacement `v2_scenario_012` awaits owner re-review" in report
+    assert "Owner review: complete for all 12 current candidates" in report
+    assert "12 proposals accepted" in report
+    assert "The replacement `v2_scenario_012` contradiction was approved" in report
     assert "Independent review has not been performed" in report
     assert "The bundle is not frozen" in report
     assert "Artifact schema versions: `2.1.0`" in report
@@ -134,34 +134,32 @@ def test_v2_review_packet_and_manifest_state_the_review_boundary(tmp_path: Path)
     assert "Adjudication: none" in report
     assert reviews[-1].review_notes in report
 
-    assert sum(row.disposition is OracleReviewDispositionV2.AGREE for row in reviews) == 11
-    assert sum(row.disposition is OracleReviewDispositionV2.PENDING for row in reviews) == 1
+    assert sum(row.disposition is OracleReviewDispositionV2.AGREE for row in reviews) == 12
+    assert not any(row.disposition is OracleReviewDispositionV2.PENDING for row in reviews)
     assert not any(row.disposition is OracleReviewDispositionV2.DISAGREE for row in reviews)
     assert not any(row.disposition is OracleReviewDispositionV2.ADJUDICATED for row in reviews)
     assert all(row.reviewer_role == "owner_reviewer" for row in reviews)
-    assert all(row.review_performed_without_policy_outputs is True for row in reviews[:-1])
-    assert reviews[-1].review_performed_without_policy_outputs is None
+    assert all(row.review_performed_without_policy_outputs is True for row in reviews)
     assert all(row.adjudicated_state is None for row in reviews)
     assert all(row.adjudicated_admissible_tool_ids is None for row in reviews)
 
-    accepted = findings[:-1]
-    disputed = findings[-1]
-    assert all(row.review_readiness is ReviewReadinessV2.REVIEW_COMPLETE for row in accepted)
-    assert all(row.evaluation_unit_status is EvaluationUnitStatusV2.SCOREABLE for row in accepted)
-    assert all(row.ready_for_scoring and row.ready_for_freeze for row in accepted)
-    assert disputed.scenario_id == "v2_scenario_012"
-    assert disputed.computed_oracle_state is OracleStateV2.CONTRACT_INVALID
-    assert disputed.expectation_matches_relation
-    assert disputed.reviewed_expected_state is None
-    assert disputed.reviewed_admissible_tool_ids is None
-    assert disputed.review_readiness is ReviewReadinessV2.PENDING_REVIEW
-    assert disputed.evaluation_unit_status is EvaluationUnitStatusV2.SCOREABLE
-    assert not disputed.ready_for_scoring
-    assert not disputed.ready_for_freeze
+    replacement = findings[-1]
+    assert all(row.review_readiness is ReviewReadinessV2.REVIEW_COMPLETE for row in findings)
+    assert all(row.evaluation_unit_status is EvaluationUnitStatusV2.SCOREABLE for row in findings)
+    assert all(row.ready_for_scoring and row.ready_for_freeze for row in findings)
+    assert replacement.scenario_id == "v2_scenario_012"
+    assert replacement.computed_oracle_state is OracleStateV2.CONTRACT_INVALID
+    assert replacement.expectation_matches_relation
+    assert replacement.reviewed_expected_state is OracleStateV2.CONTRACT_INVALID
+    assert replacement.reviewed_admissible_tool_ids == ()
+    assert replacement.review_readiness is ReviewReadinessV2.REVIEW_COMPLETE
+    assert replacement.evaluation_unit_status is EvaluationUnitStatusV2.SCOREABLE
+    assert replacement.ready_for_scoring
+    assert replacement.ready_for_freeze
 
     assert manifest.bundle_status is BundleStatusV2.PROVISIONAL_REVIEW_CANDIDATE
     assert manifest.artifact_schema_versions == ("2.1.0",)
-    assert manifest.pending_review_count == 1
+    assert manifest.pending_review_count == 0
     assert manifest.invalid_unit_count == 0
     assert manifest.contract_invalid_count == 1
     assert manifest.computed_state_counts.model_dump() == {

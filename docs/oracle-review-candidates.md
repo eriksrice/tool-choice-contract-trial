@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-Milestone 2B is a v2.1 `PROVISIONAL_REVIEW_CANDIDATE`. Owner review is complete for 11 of the 12 current cases. Replacement `v2_scenario_012` awaits owner re-review; independent review has not been performed, and the bundle is not frozen. This milestone demonstrates versioned clause expansion and an inspectable oracle-authoring workflow; it does not claim independently reviewed oracle truth, a frozen benchmark, or policy performance.
+Milestone 2B is a v2.1 `PROVISIONAL_REVIEW_CANDIDATE`. Owner review is complete for all 12 current cases, and all 12 proposals were accepted. Independent review has not been performed, and the bundle is not frozen. This milestone demonstrates versioned clause expansion and an inspectable oracle-authoring workflow; it does not claim independently reviewed oracle truth, a frozen benchmark, or policy performance.
 
 The v2 artifact layer is isolated from the frozen Milestone 1 and Milestone 2A v1 artifacts. `PolicyViewV2` contains only an opaque scenario ID, a `TaskContractV2`, and available `ToolManifestV2` records. Family labels, variant labels, proposed answers, rationales, reviews, and adjudication fields remain evaluator-only.
 
@@ -45,11 +45,11 @@ The command processes artifacts in this order:
 
 Codex-authored expectations remain explicitly `PROPOSED`. The checked-in records identify only the role `owner_reviewer`; they do not invent or encode a person's identity. The dispositions are:
 
-- 11 `AGREE` records whose reviewed states and sets cohere with both the proposals and computed relations;
-- one `PENDING` record for replacement `v2_scenario_012`, with no completed-review or adjudication values;
+- 12 `AGREE` records whose reviewed states and sets cohere with both the proposals and computed relations;
+- zero `PENDING` records;
 - zero current `DISAGREE` or `ADJUDICATED` records.
 
-The owner review does not count as independent review. The eleven coherent agreements are row-level ready for scoring and freeze under the lifecycle mechanics, but the bundle remains provisional and unfrozen. The replacement is `PENDING_REVIEW` and not ready for scoring or freeze.
+The owner review does not count as independent review. All 12 coherent agreements are row-level ready for scoring and freeze under the lifecycle mechanics, but the bundle remains provisional and unfrozen. Replacement `v2_scenario_012` is `REVIEW_COMPLETE`; its required-and-forbidden-tool contradiction was approved during owner re-review.
 
 The owner also accepted `v2_scenario_007` while noting a nonblocking ecological-validity concern: `verified_transcript` is somewhat artificial for the stated knowledge-packet task and should be reconsidered before any claim-grade freeze.
 
@@ -59,7 +59,7 @@ The owner also accepted `v2_scenario_007` while noting a nonblocking ecological-
 
 `EVALUATION_UNIT_INVALID` is not a relation state. It identifies a defective proposal, review, adjudication, or linkage, such as a completed disagreement without adjudication or an agreement whose values contradict the proposal or computed relation. Such units remain visible and cannot enter policy metrics. Duplicate or unknown linked rows are rejected as artifact-integrity failures before a bundle is produced.
 
-The current invalid-unit register is empty. Replacement `v2_scenario_012` computes `CONTRACT_INVALID`, its proposal matches that relation, and its pending review is an honest lifecycle state rather than an evaluation-unit defect.
+The current invalid-unit register is empty. Replacement `v2_scenario_012` computes `CONTRACT_INVALID`, its proposal and completed owner review match that relation, and the row is `REVIEW_COMPLETE` rather than an evaluation-unit defect.
 
 ## Provisional manifest
 
@@ -71,6 +71,6 @@ Schema validation alone does not make a loaded finding or manifest trusted. Befo
 
 ## Human review gate
 
-Before any v2 freeze decision, the owner must review replacement `v2_scenario_012`, and independent review must inspect every scenario without policy outputs. Any resulting disagreement would require separate adjudication. The retained owner reviews are not a substitute for independent review. Policy comparison, v2 counterfactual validation, broader scenario coverage, live-model evaluation, benchmark scaling, and Milestone 3 require separate authorization.
+Before any v2 freeze decision, independent review must inspect every scenario without policy outputs. Any resulting disagreement would require separate adjudication. The completed owner reviews are not a substitute for independent review. Policy comparison, v2 counterfactual validation, broader scenario coverage, live-model evaluation, benchmark scaling, and Milestone 3 require separate authorization.
 
 Run and byte-compare the candidate using [Reproducibility](reproducibility.md). The wider interpretation boundary is documented in [Limitations](limitations.md).

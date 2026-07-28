@@ -107,7 +107,7 @@ for artifact in \
 done
 ```
 
-The checked-in invalid-unit register is empty. Replacement `v2_scenario_012` has a matching proposed relation but remains honestly `PENDING_REVIEW`; focused tests also exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
+The checked-in invalid-unit register is empty. Replacement `v2_scenario_012` has a matching proposed and owner-reviewed relation and is row-level ready for scoring and freeze; the bundle nevertheless remains provisional, unfrozen, and independently unreviewed. Focused tests also exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
 
 ## Offline frozen replay
 
@@ -168,9 +168,9 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
 | `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
 | `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
-| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `75a0945eee6f84a32362b0b24d9c261269a70db7a366e6e8c9493eb9adb9ec37` |
-| `tests/golden/milestone_2b/oracle_review_packet.md` | `f40f2ebf8e17beb22cde325111341907d88a7ab8238308fd86a2203e11977e29` |
-| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `08131c98e031f37e6daa0bd05099ac1755149f67774768dc45558e33ee0c58ed` |
+| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `60b60f1df3e830cefcc3d1831e7dd96e14ce373f506fc9d6f21ab8394fa2f539` |
+| `tests/golden/milestone_2b/oracle_review_packet.md` | `3ad4db024eb5db5ea08d8b82b7cffe1198a9452229f46d8757d797a0308bc4a3` |
+| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `09834c0cc013dfc27538f570773b36a17a3a3a51d0681657c3c91b2c16e785d8` |
 | `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.

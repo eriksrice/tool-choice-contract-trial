@@ -120,7 +120,7 @@ uv run --frozen python -m tool_choice_contract_trial validate-oracle-candidates 
   --invalid-unit-register artifacts/oracle_review/invalid_unit_register.jsonl
 ```
 
-The owner review remains complete for 11 current candidates. The disputed original `v2_scenario_012` was replaced, rather than adjudicated in place, with an explicit required-and-forbidden-tool contradiction; that replacement awaits owner re-review. Independent review has not been performed, no policy decisions are evaluated, and the v2.1 bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
+Owner review is complete for all 12 current candidates, and all 12 proposals were accepted. The disputed original `v2_scenario_012` was replaced, rather than adjudicated in place, with an explicit required-and-forbidden-tool contradiction; the owner approved that replacement. Independent review has not been performed, no policy decisions are evaluated, and the v2.1 bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
 
 ## Verification commands
 
@@ -184,15 +184,15 @@ docs/                         Public architecture, semantics, reproducibility, l
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
 - Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
 - Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
-- Milestone 2B has 11 retained owner agreements and one replacement candidate awaiting owner re-review; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
+- Milestone 2B has 12 owner agreements; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
 - The v2 controlled pairs have not been processed by the v1-only Milestone 2A counterfactual analyzer.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the v2.1 replacement candidate for owner re-review.
-2. **Next design gate:** complete owner re-review, obtain independent human review, adjudicate any resulting disagreement, and decide whether the candidate is suitable to freeze.
+1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the completed owner review of the v2.1 candidate.
+2. **Next design gate:** obtain independent human review, adjudicate any resulting disagreement, and decide whether the candidate is suitable to freeze.
 3. **Only after a separate scope review:** consider v2 counterfactual analysis, policy comparison, or broader synthetic coverage without weakening the policy/evaluator boundary.
 
 ## Claim boundary

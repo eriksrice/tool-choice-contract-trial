@@ -83,15 +83,33 @@ def render_oracle_review_packet_v2(
         if owner_review_count == len(review_rows)
         else f"complete for {owner_review_count} of {len(review_rows)} current candidates"
     )
-    pending_review_statement = (
-        "The replacement `v2_scenario_012` awaits owner re-review."
-        if pending_scenario_ids == ("v2_scenario_012",)
-        else f"Pending owner-review candidates: {_values(pending_scenario_ids)}."
-    )
+    replacement_review = reviews_by_id.get("v2_scenario_012")
+    if (
+        not pending_scenario_ids
+        and replacement_review is not None
+        and replacement_review.disposition is OracleReviewDispositionV2.AGREE
+    ):
+        pending_review_statement = (
+            "The replacement `v2_scenario_012` contradiction was approved during owner re-review."
+        )
+    elif not pending_scenario_ids:
+        pending_review_statement = "No owner-review candidates are pending."
+    elif pending_scenario_ids == ("v2_scenario_012",):
+        pending_review_statement = "The replacement `v2_scenario_012` awaits owner re-review."
+    else:
+        pending_review_statement = (
+            f"Pending owner-review candidates: {_values(pending_scenario_ids)}."
+        )
     independent_review_statement = (
         "Independent review has not been performed."
         if independent_review_count == 0
         else f"Independent review is recorded for {independent_review_count} cases."
+    )
+    owner_review_instruction = (
+        "Owner review is complete for all 12 current candidates, including replacement "
+        "`v2_scenario_012`."
+        if owner_review_count == len(review_rows)
+        else "Owner review is not complete for all current candidates."
     )
 
     lines = [
@@ -220,9 +238,9 @@ def render_oracle_review_packet_v2(
         [
             "## Human review instructions",
             "",
-            "The replacement `v2_scenario_012` awaits owner re-review. Independent review also "
-            "remains outstanding and must assess the proposed state, admissible set, and rationale "
-            "without policy outputs. Any future disagreement would require separate adjudication.",
+            f"{owner_review_instruction} Independent review remains outstanding and must assess "
+            "the proposed state, admissible set, and rationale without policy outputs. Any future "
+            "disagreement would require separate adjudication.",
             "",
             "## Interpretation boundary",
             "",
