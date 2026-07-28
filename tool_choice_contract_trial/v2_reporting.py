@@ -101,9 +101,9 @@ def render_oracle_review_packet_v2(
             f"Pending owner-review candidates: {_values(pending_scenario_ids)}."
         )
     independent_review_statement = (
-        "Independent review has not been performed."
+        "Independent human review has not been performed."
         if independent_review_count == 0
-        else f"Independent review is recorded for {independent_review_count} cases."
+        else f"Independent human review is recorded for {independent_review_count} cases."
     )
     owner_review_instruction = (
         "Owner review is complete for all 12 current candidates, including replacement "
@@ -238,7 +238,8 @@ def render_oracle_review_packet_v2(
         [
             "## Human review instructions",
             "",
-            f"{owner_review_instruction} Independent review remains outstanding and must assess "
+            f"{owner_review_instruction} Independent human review remains outstanding and must "
+            "assess "
             "the proposed state, admissible set, and rationale without policy outputs. Any future "
             "disagreement would require separate adjudication.",
             "",

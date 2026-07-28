@@ -2,7 +2,7 @@
 
 > Owner review: complete for all 12 current candidates; 12 proposals accepted. The replacement `v2_scenario_012` contradiction was approved during owner re-review.
 
-> Independent review has not been performed. The bundle is not frozen, and no policy decisions were used.
+> Independent human review has not been performed. The bundle is not frozen, and no policy decisions were used.
 
 ## Bundle summary
 
@@ -333,7 +333,7 @@
 
 ## Human review instructions
 
-Owner review is complete for all 12 current candidates, including replacement `v2_scenario_012`. Independent review remains outstanding and must assess the proposed state, admissible set, and rationale without policy outputs. Any future disagreement would require separate adjudication.
+Owner review is complete for all 12 current candidates, including replacement `v2_scenario_012`. Independent human review remains outstanding and must assess the proposed state, admissible set, and rationale without policy outputs. Any future disagreement would require separate adjudication.
 
 ## Interpretation boundary
 

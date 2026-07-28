@@ -16,6 +16,7 @@
 - add three synthetic review-candidate families with 12 policy-visible scenarios;
 - keep proposed oracle expectations and review records separate from independent relation computation;
 - record the repository owner's policy-output-independent review, including approval of the replacement twelfth case, for 12 current agreements;
+- add a separate blind independent model-review evidence layer with 12/12 full three-way agreement, strict provenance, public-safe canonical artifacts, and no independent-human-review, freeze, or policy-evaluation claim;
 - retain the nonblocking ecological-validity concern for `v2_scenario_007`;
 - distinguish intentional `CONTRACT_INVALID` relations from defective `EVALUATION_UNIT_INVALID` artifact relationships;
 - add deterministic oracle-validation findings, a human review packet, a provisional manifest, and an invalid-unit register;

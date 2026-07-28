@@ -2,7 +2,7 @@
 
 **Status: Milestone 2B Review Candidate — Active Development**
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2.1 review candidate for input, output/evidence, explicit-prohibition, and required-tool clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation.
+Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2.1 review candidate for input, output/evidence, explicit-prohibition, and required-tool clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation and a separate blind independent model review.
 
 In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
 
@@ -43,6 +43,10 @@ flowchart LR
     C2 --> Q2
     Q2 --> K["Findings + provisional manifest"]
     K --> L["Pure review packet"]
+
+    K --> BM["Blind model-review comparison"]
+    BR["Unblinded model-review records"] --> BM
+    BM --> BP["Public provenance + pure report"]
 ```
 
 The v1 adapter and v2 relation checker receive only their policy-visible views: an opaque scenario ID, a task contract, and tool manifests. Oracle records, proposed expectations, review records, family labels, and other evaluator metadata stay on the evaluation side of the boundary. Milestone 2B loads no policy decisions. See [Architecture](docs/architecture.md).
@@ -120,7 +124,7 @@ uv run --frozen python -m tool_choice_contract_trial validate-oracle-candidates 
   --invalid-unit-register artifacts/oracle_review/invalid_unit_register.jsonl
 ```
 
-Owner review is complete for all 12 current candidates, and all 12 proposals were accepted. The disputed original `v2_scenario_012` was replaced, rather than adjudicated in place, with an explicit required-and-forbidden-tool contradiction; the owner approved that replacement. Independent review has not been performed, no policy decisions are evaluated, and the v2.1 bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
+Owner review is complete for all 12 current candidates, and all 12 proposals were accepted. The disputed original `v2_scenario_012` was replaced, rather than adjudicated in place, with an explicit required-and-forbidden-tool contradiction; the owner approved that replacement. A subsequent blind independent model review reported 12/12 full agreement with the owner-reviewed and computed relations, 12 high-confidence responses, no semantic-ambiguity flags, and ecological-validity concerns on all 12 cases. Independent human review has not been performed, no policy decisions are evaluated, and the v2.1 bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See the [comparison report](fixtures/milestone_2b/blind_model_review_001/comparison_report.md) and [Oracle review candidates](docs/oracle-review-candidates.md).
 
 ## Verification commands
 
@@ -154,7 +158,7 @@ The last row is intentionally not grouped with inadmissible selection: the selec
 tool_choice_contract_trial/   Authoritative models, evaluation, I/O, CLI, reporting
 fixtures/milestone_1/         Four policy-visible, metadata, oracle, and replay bundles
 fixtures/milestone_2a/        Evaluator-only comparison specifications over M1 scenarios
-fixtures/milestone_2b/        Twelve v2 scenarios, proposals, and owner-review records
+fixtures/milestone_2b/        V2 candidate sources plus public blind model-review evidence
 schemas/v1/                   Frozen v1 deterministic JSON Schema projections
 schemas/v2/                   Isolated v2 deterministic JSON Schema projections
 tests/                        Unit, boundary, integrity, schema, and replay tests
@@ -172,7 +176,7 @@ docs/                         Public architecture, semantics, reproducibility, l
 - **Deterministic artifacts:** stable ordering, canonical serialization, no timestamps, and pure report projection.
 - **Declared-manifest boundary:** compatibility is evaluated without tool execution or runtime-truth claims.
 - **Counterfactual restraint:** a clause set is decisive for the admissibility relation only after a structurally valid intervention changes that independently computed relation.
-- **Reviewable oracle authoring:** proposed expectations, computed relations, independent reviews, and adjudication remain separate artifacts.
+- **Reviewable oracle authoring:** proposals, computed relations, owner reviews, blind independent model review, human review, and adjudication remain separate evidence concepts.
 - **Versioned compatibility:** frozen v1 behavior and artifacts are not silently changed by v2 clause expansion.
 
 ## Current limitations
@@ -184,19 +188,20 @@ docs/                         Public architecture, semantics, reproducibility, l
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
 - Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
 - Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
-- Milestone 2B has 12 owner agreements; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
+- Milestone 2B has 12 owner agreements and 12/12 blind independent model-review agreements. Independent human review has not been performed; the bundle is not frozen, and no policy decisions are evaluated against it.
+- Eleven model-review notes identify one bundle-level limitation: synthetic, self-declared manifests are not runtime-verified. Scenario 007's `verified_transcript` requirement and scenario 012's deliberate contradiction also have specific realism caveats.
 - The v2 controlled pairs have not been processed by the v1-only Milestone 2A counterfactual analyzer.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the completed owner review of the v2.1 candidate.
+1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting separate owner-review and blind independent model-review evidence for the v2.1 candidate.
 2. **Next design gate:** obtain independent human review, adjudicate any resulting disagreement, and decide whether the candidate is suitable to freeze.
 3. **Only after a separate scope review:** consider v2 counterfactual analysis, policy comparison, or broader synthetic coverage without weakening the policy/evaluator boundary.
 
 ## Claim boundary
 
-The current version proves frozen v1 evaluation and counterfactual-comparison mechanics on one synthetic authority family, plus deterministic v2 oracle-authoring and review mechanics on three proposed synthetic families. It does **not** establish independently reviewed v2 oracle truth, a frozen or broader benchmark, policy-comparison results, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
+The current version proves frozen v1 evaluation and counterfactual-comparison mechanics on one synthetic authority family, plus deterministic v2 oracle-authoring and blind independent model-review integration mechanics on three proposed synthetic families. It does **not** establish independent human validation of v2 oracle truth, a frozen or broader benchmark, policy-comparison results, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
 
 Additional technical detail is available in [Evaluation semantics](docs/evaluation.md), [Counterfactual clause semantics](docs/counterfactual-semantics.md), and [Oracle review candidates](docs/oracle-review-candidates.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).

@@ -7,6 +7,11 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from .blind_model_review_models import (
+    BlindModelReviewComparisonV2,
+    BlindModelReviewProvenanceManifestV2,
+    BlindModelReviewRecordV2,
+)
 from .errors import SchemaDriftError
 from .v2_models import (
     ClauseWitnessV2,
@@ -20,6 +25,9 @@ from .v2_models import (
 )
 
 V2_SCHEMA_MODELS: dict[str, type[BaseModel]] = {
+    "blind_model_review_comparison_v2.schema.json": BlindModelReviewComparisonV2,
+    "blind_model_review_provenance_manifest_v2.schema.json": (BlindModelReviewProvenanceManifestV2),
+    "blind_model_review_record_v2.schema.json": BlindModelReviewRecordV2,
     "clause_witness_v2.schema.json": ClauseWitnessV2,
     "oracle_expectation_v2.schema.json": OracleExpectationV2,
     "oracle_review_record_v2.schema.json": OracleReviewRecordV2,

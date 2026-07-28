@@ -107,7 +107,19 @@ for artifact in \
 done
 ```
 
-The checked-in invalid-unit register is empty. Replacement `v2_scenario_012` has a matching proposed and owner-reviewed relation and is row-level ready for scoring and freeze; the bundle nevertheless remains provisional, unfrozen, and independently unreviewed. Focused tests also exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
+The checked-in invalid-unit register is empty. Replacement `v2_scenario_012` has a matching proposed and owner-reviewed relation and is row-level ready for scoring and freeze; the bundle nevertheless remains provisional and unfrozen, and independent human review has not been performed. Focused tests also exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
+
+## Blind independent model-review evidence
+
+The public-safe evidence bundle is checked in at `fixtures/milestone_2b/blind_model_review_001/`. It contains canonical unblinded records, three-way comparisons, hash-bound provenance, and a pure Markdown report. The raw blind packet and reversible private map remain local-only.
+
+Run the focused verification:
+
+```bash
+uv run --frozen pytest tests/test_blind_model_review.py
+```
+
+The tests validate the public artifact hashes and counts, source-verify comparisons against the unchanged owner evidence and computed relations, reproduce canonical serialization and the report byte-for-byte, exercise a synthetic blind protocol without the private map, and check mutation sensitivity. They also confirm that this evidence is a blind independent model review—not independent human review, benchmark freeze, or policy evaluation.
 
 ## Offline frozen replay
 
@@ -156,6 +168,8 @@ cmp "$offline_dir/provisional_bundle_manifest.json" \
   tests/golden/milestone_2b/provisional_bundle_manifest.json
 cmp "$offline_dir/invalid_unit_register.jsonl" \
   tests/golden/milestone_2b/invalid_unit_register.jsonl
+
+uv run --offline --frozen pytest tests/test_blind_model_review.py
 ```
 
 ## Canonical artifact hashes
@@ -169,9 +183,13 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
 | `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
 | `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `60b60f1df3e830cefcc3d1831e7dd96e14ce373f506fc9d6f21ab8394fa2f539` |
-| `tests/golden/milestone_2b/oracle_review_packet.md` | `3ad4db024eb5db5ea08d8b82b7cffe1198a9452229f46d8757d797a0308bc4a3` |
+| `tests/golden/milestone_2b/oracle_review_packet.md` | `753f5a94c63f4a28f0a8723c44bcccea7b9807270e1e35ae1bd6943fe9af0069` |
 | `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `09834c0cc013dfc27538f570773b36a17a3a3a51d0681657c3c91b2c16e785d8` |
 | `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `fixtures/milestone_2b/blind_model_review_001/model_review_records.jsonl` | `4340c0d23a40f1d5c0505bb64ef78ed6834580e6aafd721eb66f4cdaa5d88db8` |
+| `fixtures/milestone_2b/blind_model_review_001/comparison_records.jsonl` | `b8713c9ea4e5776fa319ef0a7c31e2ed122cc83bf240fa5c5083719415b31b5b` |
+| `fixtures/milestone_2b/blind_model_review_001/review_provenance_manifest.json` | `46b347595e2eceda4289b9503748bbab907d8e7a33017e626681497611a12404` |
+| `fixtures/milestone_2b/blind_model_review_001/comparison_report.md` | `54c5173ccd9da01c19c90cfd9dfffc07db82b24b308153a1165ecf130147e13b` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
@@ -188,4 +206,5 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
 - the provisional manifest covers scenario, expectation, review, finding, bundle, and relation-registry hashes;
 - persisted findings and manifests are source-verified against scenarios, expectations, reviews, and independently recomputed relations before report rendering;
+- blind model-review records are hash-bound to the registered packet, private map, raw response, and source commit, while public comparisons are rebuilt from separate model, owner, and computed relations;
 - volatile run metadata is excluded from canonical artifacts.

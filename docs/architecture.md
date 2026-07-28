@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Tool Choice Contract Trial evaluates whether a recorded policy decision is admissible under an explicit task contract and a set of declared tool manifests. Milestone 2A also validates evaluator-only counterfactual comparisons between existing v1 scenarios. Milestone 2B adds a separate v2 path that computes admissibility before comparing it with proposed expectations and review records. Every path is local and deterministic: typed files enter, validated artifacts leave, and no tool is executed.
+Tool Choice Contract Trial evaluates whether a recorded policy decision is admissible under an explicit task contract and a set of declared tool manifests. Milestone 2A also validates evaluator-only counterfactual comparisons between existing v1 scenarios. Milestone 2B adds a separate v2 path that computes admissibility before comparing it with proposed expectations and owner-review records, plus an additive blind independent model-review evidence path. Every path is local and deterministic: typed files enter, validated artifacts leave, and no tool is executed.
 
 ## Components
 
@@ -16,9 +16,11 @@ Tool Choice Contract Trial evaluates whether a recorded policy decision is admis
 | Counterfactual analyzer | Validate clause-owned contract changes and compare independently computed endpoint relations. | Read policy decisions or use stored oracle labels as truth. |
 | `PolicyViewV2` | Carry only an opaque scenario ID, v2 contract, and v2 manifests. | Family labels, proposed answers, reviews, decisions, or evaluation labels. |
 | V2 relation checker | Derive state, admissible set, witnesses, and semantic contract defects solely from `PolicyViewV2`. | Read proposals, reviews, adjudications, or policy decisions. |
-| `OracleExpectationV2` | Store an evaluator-only proposed state, set, response, rationale, family, and variant. | Become computed truth or claim independent review. |
+| `OracleExpectationV2` | Store an evaluator-only proposed state, set, response, rationale, family, and variant. | Become computed truth or claim independent human review. |
 | `OracleReviewRecordV2` | Record pending, agreeing, disagreeing, or adjudicated review state and policy-output independence. | Invent a reviewer, imply a pending review is complete, or alter the computed relation. |
 | V2 validation layer | Compare the already-computed relation with the proposal and review; classify readiness and evaluation-unit defects. | Score a policy, freeze a pending candidate, or convert contract invalidity into fixture invalidity. |
+| `BlindModelReviewRecordV2` | Preserve canonical unblinded output from one registered blind independent model-review protocol. | Replace owner review, imply human identity, or publish the reversible private map. |
+| Blind model-review comparison | Compare the owner-reviewed, blind-model-reviewed, and independently computed relations after source verification. | Feed answers to a policy, change relation semantics, or turn realism caveats into oracle disagreement. |
 | Serializer | Write stable UTF-8 canonical JSONL. | Add timestamps or environment-specific paths. |
 | Report renderers | Produce Markdown solely from validated result or finding bundles. | Add volatile run context or infer missing evidence. |
 
@@ -48,9 +50,15 @@ Milestone 2B review-candidate path
   oracle_reviews.jsonl ---------------------------------------+   + provisional manifest
                                                                +-> review packet
                                                                +-> invalid-unit register
+
+Blind independent model-review evidence path
+  local-only blind packet + response + private map --+
+  source-verified v2 relation + owner evidence -------+-> canonical unblinded records
+                                                       +-> three-way comparisons
+                                                       +-> public-safe provenance + report
 ```
 
-The loading paths are separate in code. `policy_io.py` handles v1 policy-visible scenarios and stored decisions; `oracle_io.py`, `evaluation_io.py`, and `counterfactual_io.py` handle v1 evaluator-only material. `v2_io.py` validates the separately stored v2 policy views, proposals, and reviews. The v2 relation checker receives only `PolicyViewV2`, and the validation command has no policy-decision input. Boundary tests confirm that policy-visible identifiers and inputs do not expose answer labels, review state, family labels, or comparison metadata.
+The loading paths are separate in code. `policy_io.py` handles v1 policy-visible scenarios and stored decisions; `oracle_io.py`, `evaluation_io.py`, and `counterfactual_io.py` handle v1 evaluator-only material. `v2_io.py` validates the separately stored v2 policy views, proposals, and owner reviews. The v2 relation checker receives only `PolicyViewV2`, and neither v2 evidence command has a policy-decision input. The model-review integrator validates the registered source hashes, reverses per-case aliases with the local-only private map, then compares canonical model output with source-verified owner and computed relations. Boundary tests confirm that policy-visible identifiers and inputs do not expose answer labels, review state, family labels, or comparison metadata.
 
 ## Version boundary
 
@@ -85,9 +93,12 @@ The deterministic bundle excludes volatile metadata. Serialization uses UTF-8, s
 - `tool_choice_contract_trial/v2_relation.py`: independent v2 declared-manifest relation assessment.
 - `tool_choice_contract_trial/v2_validation.py`: proposal/review comparison and provisional manifest assembly.
 - `tool_choice_contract_trial/v2_reporting.py`: pure v2 review-packet projection.
+- `tool_choice_contract_trial/blind_model_review_models.py`: strict model-review record, comparison, and public provenance types.
+- `tool_choice_contract_trial/blind_model_review.py`: source hashing, unblinding, and source-aware three-way comparison.
+- `tool_choice_contract_trial/blind_model_review_reporting.py`: pure blind model-review report projection.
 - `tool_choice_contract_trial/policy.py`: replay adapter.
 - `tool_choice_contract_trial/serialization.py`: canonical JSON and hashing.
 - `tool_choice_contract_trial/reporting.py`: pure Markdown projection.
 - `tool_choice_contract_trial/cli.py`: `argparse` command surface.
 
-Formal comparison validity and attribution rules are documented in [Counterfactual clause semantics](counterfactual-semantics.md). The v2 proposal and review lifecycle is documented in [Oracle review candidates](oracle-review-candidates.md).
+Formal comparison validity and attribution rules are documented in [Counterfactual clause semantics](counterfactual-semantics.md). The v2 proposal, owner-review, and blind independent model-review evidence are documented in [Oracle review candidates](oracle-review-candidates.md).
