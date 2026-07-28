@@ -20,6 +20,7 @@ from .v2_registry import (
     OUTPUT_CITATIONS_V2,
     OUTPUT_REQUIREMENT_V2,
     TOOL_PROHIBITION_V2,
+    TOOL_REQUIREMENT_V2,
     V2_RELATION_CLAUSE_REGISTRY,
 )
 
@@ -138,25 +139,31 @@ def _tool_witnesses_v2(view: PolicyViewV2, tool: ToolManifestV2) -> tuple[Clause
             )
         )
 
+    if contract.required_tool_id is not None and tool.tool_id != contract.required_tool_id:
+        witnesses.append(
+            _witness(
+                clause_id=TOOL_REQUIREMENT_V2,
+                tool_id=tool.tool_id,
+                expected_values=(contract.required_tool_id,),
+                actual_values=(tool.tool_id,),
+            )
+        )
+
     return tuple(sorted(witnesses, key=lambda item: item.clause_id))
 
 
 def assess_policy_view_v2(view: PolicyViewV2) -> RelationAssessmentV2:
     """Compute the v2 relation using policy-visible contract and manifest fields only."""
 
-    available_tool_ids = {tool.tool_id for tool in view.tools}
-    unavailable_forbidden_ids = tuple(
-        sorted(set(view.contract.forbidden_tool_ids) - available_tool_ids)
-    )
-    if unavailable_forbidden_ids:
+    required_tool_id = view.contract.required_tool_id
+    if required_tool_id is not None and required_tool_id in view.contract.forbidden_tool_ids:
         return RelationAssessmentV2(
             oracle_state=OracleStateV2.CONTRACT_INVALID,
             admissible_tool_ids=(),
             expected_decision=DecisionKindV2.INVALID_CONTRACT,
             witnesses=(),
-            contract_invalid_reasons=tuple(
-                f"forbidden tool ID is unavailable: {tool_id}"
-                for tool_id in unavailable_forbidden_ids
+            contract_invalid_reasons=(
+                f"required tool is also explicitly forbidden: {required_tool_id}",
             ),
         )
 

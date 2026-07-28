@@ -9,8 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .v2_registry import V2_RELATION_CLAUSE_REGISTRY, V2_RELATION_REGISTRY_HASH
 
-V2_SCHEMA_VERSION = "2.0.0"
-V2SchemaVersion = Literal["2.0.0"]
+V2_SCHEMA_VERSION = "2.1.0"
+V2SchemaVersion = Literal["2.1.0"]
 
 
 class V2ContractModel(BaseModel):
@@ -61,6 +61,7 @@ class FailureCodeV2(StrEnum):
     INPUT_CONTRACT_MISMATCH = "F_INPUT_CONTRACT_MISMATCH"
     OUTPUT_CONTRACT_MISMATCH = "F_OUTPUT_CONTRACT_MISMATCH"
     EXPLICIT_PROHIBITION = "F_EXPLICIT_PROHIBITION"
+    REQUIRED_TOOL_MISMATCH = "F_REQUIRED_TOOL_MISMATCH"
 
 
 class AuthoringStatusV2(StrEnum):
@@ -101,6 +102,7 @@ class TaskContractV2(V2ContractModel):
     required_output_profiles: tuple[str, ...] = Field(min_length=1)
     citations_required: bool = True
     forbidden_tool_ids: tuple[str, ...] = ()
+    required_tool_id: str | None = Field(default=None, pattern=r"^[a-z0-9_]+$")
 
     @field_validator(
         "required_capabilities",

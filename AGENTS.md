@@ -26,7 +26,7 @@ This repository evaluates whether declared tool manifests satisfy typed task con
 
 - Preserve the frozen Milestone 1 fixtures, commands, schemas, goldens, and hashes.
 - Preserve the frozen Milestone 2A comparison fixtures, schemas, counterfactual registry and hash, commands, goldens, and hashes.
-- Keep the v2 `2.0.0` models, schemas, fixtures, registry, and review artifacts explicitly separate from v1; do not build an implicit migration path.
+- Keep the v2 `2.1.0` models, schemas, fixtures, registry, and review artifacts explicitly separate from v1; do not build an implicit migration path.
 - Keep new evaluator-only artifacts separate from policy-visible inputs.
 - Do not add a scenario family, contract clause class, execution behavior, or broader claim unless the current task explicitly authorizes it.
 - Stop at the milestone boundary named by the task.

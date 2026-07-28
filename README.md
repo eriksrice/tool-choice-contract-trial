@@ -2,7 +2,7 @@
 
 **Status: Milestone 2B Review Candidate — Active Development**
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2 review candidate for input, output/evidence, and explicit-prohibition clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation.
+Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2.1 review candidate for input, output/evidence, explicit-prohibition, and required-tool clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation.
 
 In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
 
@@ -120,7 +120,7 @@ uv run --frozen python -m tool_choice_contract_trial validate-oracle-candidates 
   --invalid-unit-register artifacts/oracle_review/invalid_unit_register.jsonl
 ```
 
-The owner reviewed all 12 candidates without policy outputs: 11 proposed expectations were accepted, while `v2_scenario_012` was disputed and remains unadjudicated. Independent review has not been performed, no policy decisions are evaluated, and the bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
+The owner review remains complete for 11 current candidates. The disputed original `v2_scenario_012` was replaced, rather than adjudicated in place, with an explicit required-and-forbidden-tool contradiction; that replacement awaits owner re-review. Independent review has not been performed, no policy decisions are evaluated, and the v2.1 bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
 
 ## Verification commands
 
@@ -178,21 +178,21 @@ docs/                         Public architecture, semantics, reproducibility, l
 ## Current limitations
 
 - The frozen v1 evaluation covers one synthetic family and four cases; the v2 layer adds three proposed synthetic families and 12 review-candidate cases. Neither establishes benchmark validity or cross-domain performance.
-- V2 cases exercise only input profiles, output/evidence profiles, explicit prohibition, and the compatible v1 capability/authority semantics.
+- V2 cases exercise only input profiles, output/evidence profiles, explicit prohibition, one required-tool identity field, and the compatible v1 capability/authority semantics.
 - The included policy output is a trusted stored replay, not a live or independently competitive policy.
 - Tool manifests are declarations; their runtime truth is not checked.
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
 - Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
 - Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
-- Milestone 2B has an owner review with 11 agreements and one unadjudicated disagreement; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
+- Milestone 2B has 11 retained owner agreements and one replacement candidate awaiting owner re-review; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
 - The v2 controlled pairs have not been processed by the v1-only Milestone 2A counterfactual analyzer.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** preserve frozen Milestone 1 and 2A artifacts while exposing the completed owner review and its unresolved `v2_scenario_012` disagreement.
-2. **Next design gate:** obtain independent human review, adjudicate the disagreement, and decide whether the candidate is suitable to freeze.
+1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the v2.1 replacement candidate for owner re-review.
+2. **Next design gate:** complete owner re-review, obtain independent human review, adjudicate any resulting disagreement, and decide whether the candidate is suitable to freeze.
 3. **Only after a separate scope review:** consider v2 counterfactual analysis, policy comparison, or broader synthetic coverage without weakening the policy/evaluator boundary.
 
 ## Claim boundary
