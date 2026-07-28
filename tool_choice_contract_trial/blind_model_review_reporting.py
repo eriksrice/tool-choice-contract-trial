@@ -46,6 +46,11 @@ def render_blind_model_review_report_v2(
         "## Provenance",
         "",
         f"- Review protocol: `{provenance.review_protocol_id}`",
+        f"- Review protocol SHA-256: `{provenance.review_protocol_sha256}`",
+        f"- Reviewer platform: `{provenance.reviewer_platform}`",
+        f"- Review session type: `{provenance.review_session_type.value}`",
+        f"- Exact model identifier: `{provenance.reviewer_model_identifier}`",
+        "- Human reviewer: no",
         f"- Source commit: `{provenance.source_commit_sha}`",
         f"- Blind packet SHA-256: `{provenance.source_packet_sha256}`",
         f"- Private map SHA-256: `{provenance.private_map_sha256}`",
@@ -53,6 +58,11 @@ def render_blind_model_review_report_v2(
         "- Reviewer input: shuffled policy-visible cases with per-case aliased tool IDs.",
         f"- Withheld from reviewer: {_values(provenance.withheld_answer_bearing_sources)}.",
         "- Responses: one JSONL record per blind case.",
+        "- Packet identity check passed: yes",
+        "- Blind packet published: yes",
+        "- Raw model-review response published: yes",
+        "- Private case map published: no",
+        "- Private source manifest published: no",
         "- Independent human review performed: no",
         "- Policy decisions used: no",
         "",
@@ -132,12 +142,26 @@ def render_blind_model_review_report_v2(
             "Ecological-validity flags do not change oracle agreement, evaluation-unit status, "
             "or row-level readiness.",
             "",
+            "## Reproducibility boundary",
+            "",
+            "A clean public clone can verify the exact blind packet, raw model-review response, "
+            "review protocol, canonical records, three-way comparisons, provenance counts and "
+            "hashes, deterministic report, and consistency with owner and computed repository "
+            "evidence.",
+            "",
+            "A clean public clone cannot repeat the original alias reversal because the "
+            "reversible private case map and private source manifest remain unpublished. The "
+            "provenance manifest provides cryptographic commitments to those retained private "
+            "files, not public access to them.",
+            "",
             "## Interpretation boundary",
             "",
             "- The owner-review artifacts remain separate and unchanged.",
             "- Independent human review has not been performed.",
             "- Row-level agreement does not freeze the provisional candidate.",
-            "- No policy decisions, policy metrics, live models, or tool execution are included.",
+            "- No live-model policy evaluation or runtime model invocation is part of the "
+            "repository. The evidence records a completed external blind model-review session.",
+            "- No policy decisions, policy metrics, or runtime tool execution are included.",
             "- No benchmark-validity, production, or cross-domain claim follows.",
         ]
     )

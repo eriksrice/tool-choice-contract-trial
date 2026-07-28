@@ -46,6 +46,10 @@ from .v2_validation import verify_provisional_manifest_v2
 
 EXPECTED_BLIND_PACKET_SHA256 = "a3a10982ada95885b8d74b55e4b9c36ee51282161cd831614a46fa54d3275ab7"
 EXPECTED_PRIVATE_MAP_SHA256 = "afe4b4dccdbc050c0283a29593c2b3bdfe4602c11b31f3d408a68d933ab0a8a3"
+EXPECTED_RAW_MODEL_REVIEW_SHA256 = (
+    "668b643ea126c746ed0f35d1f3859992e4a1c11ec0df24a74f2c121411f33da1"
+)
+EXPECTED_REVIEW_PROTOCOL_SHA256 = "4193e72ea938bdf4a1629b5807c1295f31511b7ea4e773568e684f5ab269f8d3"
 EXPECTED_SOURCE_COMMIT_SHA = "c11741b5e628354ed0fdcae46e1e8c7908fe109a"
 EXPECTED_BLIND_SEED = "tool-choice-contract-trial-v2.1-independent-review-001"
 EXPECTED_UNBLINDING = {
@@ -54,10 +58,11 @@ EXPECTED_UNBLINDING = {
 }
 WITHHELD_ANSWER_BEARING_SOURCES = (
     "computed_findings",
-    "expectations",
-    "manifests",
-    "owner_reviews",
+    "oracle_expectations",
+    "owner_review_records",
+    "owner_provisional_manifest",
     "policy_outputs",
+    "private_case_map",
     "repository_history",
 )
 BUNDLE_REALISM_PHRASE = "abstract, self-declared manifest profiles"
@@ -236,6 +241,10 @@ def verify_blind_model_review_evidence_v2(
         "blind_model_review_comparisons_v2", comparison_rows
     ):
         raise ArtifactIntegrityError("comparison_bundle_hash differs from comparisons")
+    if provenance.withheld_answer_bearing_sources != tuple(sorted(WITHHELD_ANSWER_BEARING_SOURCES)):
+        raise ArtifactIntegrityError(
+            "withheld_answer_bearing_sources differs from the registered protocol"
+        )
 
     for scenario_id, record in records_by_id.items():
         comparison = comparisons_by_id[scenario_id]
@@ -295,6 +304,29 @@ def verify_blind_model_review_evidence_v2(
         )
 
 
+def verify_published_blind_model_review_sources_v2(
+    provenance: BlindModelReviewProvenanceManifestV2,
+    *,
+    blind_packet_path: Path,
+    raw_review_path: Path,
+    review_protocol_path: Path,
+) -> None:
+    """Verify the exact public review inputs, output, and protocol commitments."""
+
+    if provenance.source_packet_sha256 != EXPECTED_BLIND_PACKET_SHA256:
+        raise ArtifactIntegrityError("provenance blind packet hash is not registered")
+    if provenance.raw_review_sha256 != EXPECTED_RAW_MODEL_REVIEW_SHA256:
+        raise ArtifactIntegrityError("provenance raw review hash is not registered")
+    if provenance.review_protocol_sha256 != EXPECTED_REVIEW_PROTOCOL_SHA256:
+        raise ArtifactIntegrityError("provenance review protocol hash is not registered")
+    if file_sha256(blind_packet_path) != provenance.source_packet_sha256:
+        raise ArtifactIntegrityError("published blind packet hash differs from provenance")
+    if file_sha256(raw_review_path) != provenance.raw_review_sha256:
+        raise ArtifactIntegrityError("published raw review hash differs from provenance")
+    if file_sha256(review_protocol_path) != provenance.review_protocol_sha256:
+        raise ArtifactIntegrityError("published review protocol hash differs from provenance")
+
+
 def verify_blind_model_review_comparisons_against_sources_v2(
     records: Iterable[BlindModelReviewRecordV2],
     comparisons: Iterable[BlindModelReviewComparisonV2],
@@ -352,6 +384,7 @@ def build_blind_model_review_evidence_v2(
     owner_manifest_path: Path,
     blind_packet_path: Path,
     raw_review_path: Path,
+    review_protocol_path: Path,
     private_case_map_path: Path,
     private_source_manifest_path: Path,
 ) -> BlindModelReviewEvidenceBundleV2:
@@ -388,12 +421,17 @@ def build_blind_model_review_evidence_v2(
     packet_hash = file_sha256(blind_packet_path)
     map_hash = file_sha256(private_case_map_path)
     raw_review_hash = file_sha256(raw_review_path)
+    review_protocol_hash = file_sha256(review_protocol_path)
     private_manifest_hash = file_sha256(private_source_manifest_path)
     source_scenario_hash = file_sha256(scenarios_path)
     if packet_hash != EXPECTED_BLIND_PACKET_SHA256:
         raise ArtifactIntegrityError("blind packet hash does not match the registered protocol")
     if map_hash != EXPECTED_PRIVATE_MAP_SHA256:
         raise ArtifactIntegrityError("private case-map hash does not match the registered protocol")
+    if raw_review_hash != EXPECTED_RAW_MODEL_REVIEW_SHA256:
+        raise ArtifactIntegrityError("raw review hash does not match the registered protocol")
+    if review_protocol_hash != EXPECTED_REVIEW_PROTOCOL_SHA256:
+        raise ArtifactIntegrityError("review protocol hash does not match the registered protocol")
 
     packet_cases = load_blind_packet_cases_v2(blind_packet_path)
     raw_reviews = load_blind_model_review_responses_v2(raw_review_path)
@@ -500,6 +538,7 @@ def build_blind_model_review_evidence_v2(
         source_commit_sha=private_manifest.source_commit_sha,
         source_scenario_sha256=source_scenario_hash,
         source_packet_sha256=packet_hash,
+        review_protocol_sha256=review_protocol_hash,
         private_map_sha256=map_hash,
         private_source_manifest_sha256=private_manifest_hash,
         response_template_sha256=private_manifest.response_template_sha256,
@@ -542,8 +581,18 @@ def build_blind_model_review_evidence_v2(
         shuffled_cases=True,
         per_case_aliased_tool_ids=True,
         response_format="JSONL",
+        reviewer_platform="ChatGPT",
+        review_session_type="TEMPORARY_CHAT",
+        reviewer_model_identifier="NOT_RECORDED",
+        human_reviewer=False,
+        packet_identity_check_passed=True,
+        blind_packet_published=True,
+        raw_review_published=True,
         private_map_published=False,
-        raw_blind_packet_published=False,
+        private_source_manifest_published=False,
+        public_clone_can_verify_source_packet=True,
+        public_clone_can_verify_raw_response=True,
+        public_clone_can_repeat_unblinding=False,
         independent_human_review_performed=False,
         benchmark_frozen=False,
         policy_evaluation_performed=False,
@@ -554,6 +603,12 @@ def build_blind_model_review_evidence_v2(
         view_rows,
         owner_review_rows,
         owner_finding_rows,
+    )
+    verify_published_blind_model_review_sources_v2(
+        provenance,
+        blind_packet_path=blind_packet_path,
+        raw_review_path=raw_review_path,
+        review_protocol_path=review_protocol_path,
     )
     verify_blind_model_review_evidence_v2(record_rows, comparison_rows, provenance)
     return BlindModelReviewEvidenceBundleV2(

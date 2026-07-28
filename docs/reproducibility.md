@@ -111,7 +111,7 @@ The checked-in invalid-unit register is empty. Replacement `v2_scenario_012` has
 
 ## Blind independent model-review evidence
 
-The public-safe evidence bundle is checked in at `fixtures/milestone_2b/blind_model_review_001/`. It contains canonical unblinded records, three-way comparisons, hash-bound provenance, and a pure Markdown report. The raw blind packet and reversible private map remain local-only.
+The evidence bundle is checked in at `fixtures/milestone_2b/blind_model_review_001/`. It contains the exact reviewed blind packet, exact raw model-review response, exact review protocol, canonical unblinded records, three-way comparisons, hash-bound provenance, and a pure Markdown report.
 
 Run the focused verification:
 
@@ -119,7 +119,21 @@ Run the focused verification:
 uv run --frozen pytest tests/test_blind_model_review.py
 ```
 
-The tests validate the public artifact hashes and counts, source-verify comparisons against the unchanged owner evidence and computed relations, reproduce canonical serialization and the report byte-for-byte, exercise a synthetic blind protocol without the private map, and check mutation sensitivity. They also confirm that this evidence is a blind independent model review—not independent human review, benchmark freeze, or policy evaluation.
+The tests validate the public artifact hashes and counts, source-verify comparisons against the unchanged owner evidence and computed relations, reproduce canonical serialization and the report byte-for-byte, exercise a synthetic blind protocol without publishing a reversible map, and check mutation sensitivity. They also confirm that this evidence is a completed external blind independent model-review session—not independent human review, benchmark freeze, or policy evaluation.
+
+### Public-clone verification boundary
+
+A clean public clone can verify:
+
+- the exact blind packet bytes and SHA-256;
+- the exact raw model-review response bytes and SHA-256;
+- the exact review protocol and SHA-256;
+- the canonical model-review records and three-way comparisons;
+- public provenance counts and hashes;
+- deterministic report rendering;
+- consistency with owner and computed repository evidence.
+
+A clean public clone cannot independently repeat the original alias reversal. The reversible private case map and private source manifest remain unpublished. The public provenance manifest preserves cryptographic commitments to those retained private files, not public access to them.
 
 ## Offline frozen replay
 
@@ -188,8 +202,11 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `fixtures/milestone_2b/blind_model_review_001/model_review_records.jsonl` | `4340c0d23a40f1d5c0505bb64ef78ed6834580e6aafd721eb66f4cdaa5d88db8` |
 | `fixtures/milestone_2b/blind_model_review_001/comparison_records.jsonl` | `b8713c9ea4e5776fa319ef0a7c31e2ed122cc83bf240fa5c5083719415b31b5b` |
-| `fixtures/milestone_2b/blind_model_review_001/review_provenance_manifest.json` | `46b347595e2eceda4289b9503748bbab907d8e7a33017e626681497611a12404` |
-| `fixtures/milestone_2b/blind_model_review_001/comparison_report.md` | `54c5173ccd9da01c19c90cfd9dfffc07db82b24b308153a1165ecf130147e13b` |
+| `fixtures/milestone_2b/blind_model_review_001/source_evidence/blind_review_packet.md` | `a3a10982ada95885b8d74b55e4b9c36ee51282161cd831614a46fa54d3275ab7` |
+| `fixtures/milestone_2b/blind_model_review_001/source_evidence/raw_model_review_response.jsonl` | `668b643ea126c746ed0f35d1f3859992e4a1c11ec0df24a74f2c121411f33da1` |
+| `fixtures/milestone_2b/blind_model_review_001/review_protocol.md` | `4193e72ea938bdf4a1629b5807c1295f31511b7ea4e773568e684f5ab269f8d3` |
+| `fixtures/milestone_2b/blind_model_review_001/review_provenance_manifest.json` | `2f659c484fba6b36c31363241f75e52662db05a727207deeb39427b7d97c95b7` |
+| `fixtures/milestone_2b/blind_model_review_001/comparison_report.md` | `a3df5ae1819b7a86dc661b4b06bf489b689e9f14680361415933560d9e616322` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
@@ -206,5 +223,5 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
 - the provisional manifest covers scenario, expectation, review, finding, bundle, and relation-registry hashes;
 - persisted findings and manifests are source-verified against scenarios, expectations, reviews, and independently recomputed relations before report rendering;
-- blind model-review records are hash-bound to the registered packet, private map, raw response, and source commit, while public comparisons are rebuilt from separate model, owner, and computed relations;
+- blind model-review records are hash-bound to the published packet and raw response, the published protocol, the retained private map and source manifest, and the source commit, while public comparisons are rebuilt from separate model, owner, and computed relations;
 - volatile run metadata is excluded from canonical artifacts.

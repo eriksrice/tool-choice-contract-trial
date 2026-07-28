@@ -10,6 +10,8 @@ import tool_choice_contract_trial.blind_model_review as integration_module
 from tool_choice_contract_trial.blind_model_review import (
     EXPECTED_BLIND_PACKET_SHA256,
     EXPECTED_PRIVATE_MAP_SHA256,
+    EXPECTED_RAW_MODEL_REVIEW_SHA256,
+    EXPECTED_REVIEW_PROTOCOL_SHA256,
     EXPECTED_SOURCE_COMMIT_SHA,
     EXPECTED_UNBLINDING,
     BlindModelReviewEvidenceBundleV2,
@@ -17,6 +19,7 @@ from tool_choice_contract_trial.blind_model_review import (
     file_sha256,
     verify_blind_model_review_comparisons_against_sources_v2,
     verify_blind_model_review_evidence_v2,
+    verify_published_blind_model_review_sources_v2,
 )
 from tool_choice_contract_trial.blind_model_review_io import (
     load_blind_model_review_comparisons_v2,
@@ -55,6 +58,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "fixtures" / "milestone_2b" / "review_candidate"
 OWNER_GOLDEN = ROOT / "tests" / "golden" / "milestone_2b"
 PUBLIC_EVIDENCE = ROOT / "fixtures" / "milestone_2b" / "blind_model_review_001"
+SOURCE_EVIDENCE = PUBLIC_EVIDENCE / "source_evidence"
+REVIEW_PROTOCOL = PUBLIC_EVIDENCE / "review_protocol.md"
 
 EXPECTED_OWNER_HASHES = {
     "oracle_validation_findings.jsonl": (
@@ -166,6 +171,7 @@ def _write_synthetic_blind_sources(
     paths = {
         "packet": tmp_path / "blind_packet.md",
         "responses": tmp_path / "responses.jsonl",
+        "protocol": tmp_path / "review_protocol.md",
         "map": tmp_path / "private_map.json",
         "manifest": tmp_path / "private_source_manifest.json",
     }
@@ -174,6 +180,7 @@ def _write_synthetic_blind_sources(
     )
     paths["packet"].write_text(packet_text + "\n", encoding="utf-8", newline="\n")
     write_jsonl(paths["responses"], responses)
+    paths["protocol"].write_bytes(REVIEW_PROTOCOL.read_bytes())
     private_map = BlindPrivateCaseMapV2(
         _warning="DO NOT SHARE WITH THE REVIEWER — test-only synthetic map",
         alias_scope={
@@ -197,6 +204,7 @@ def _write_synthetic_blind_sources(
     )
     packet_hash = file_sha256(paths["packet"])
     map_hash = file_sha256(paths["map"])
+    raw_review_hash = file_sha256(paths["responses"])
     private_manifest = BlindPrivateSourceManifestV2(
         _warning="DO NOT SHARE WITH THE REVIEWER — test-only source manifest",
         aliases_are_bijective=True,
@@ -233,6 +241,7 @@ def _write_synthetic_blind_sources(
     )
     monkeypatch.setattr(integration_module, "EXPECTED_BLIND_PACKET_SHA256", packet_hash)
     monkeypatch.setattr(integration_module, "EXPECTED_PRIVATE_MAP_SHA256", map_hash)
+    monkeypatch.setattr(integration_module, "EXPECTED_RAW_MODEL_REVIEW_SHA256", raw_review_hash)
     monkeypatch.setattr(integration_module, "EXPECTED_UNBLINDING", expected_unblinding)
 
     evidence = build_blind_model_review_evidence_v2(
@@ -248,6 +257,7 @@ def _write_synthetic_blind_sources(
         owner_manifest_path=OWNER_GOLDEN / "provisional_bundle_manifest.json",
         blind_packet_path=paths["packet"],
         raw_review_path=paths["responses"],
+        review_protocol_path=paths["protocol"],
         private_case_map_path=paths["map"],
         private_source_manifest_path=paths["manifest"],
     )
@@ -285,6 +295,11 @@ def test_raw_review_rejects_duplicates_missing_cases_invalid_alias_and_bad_shape
         load_blind_model_review_responses_v2(paths["responses"])
 
     paths["responses"].write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+    monkeypatch.setattr(
+        integration_module,
+        "EXPECTED_RAW_MODEL_REVIEW_SHA256",
+        file_sha256(paths["responses"]),
+    )
     with pytest.raises(ArtifactIntegrityError, match="incomplete case set"):
         build_blind_model_review_evidence_v2(
             scenarios_path=SOURCE / "scenarios.jsonl",
@@ -301,6 +316,7 @@ def test_raw_review_rejects_duplicates_missing_cases_invalid_alias_and_bad_shape
             owner_manifest_path=OWNER_GOLDEN / "provisional_bundle_manifest.json",
             blind_packet_path=paths["packet"],
             raw_review_path=paths["responses"],
+            review_protocol_path=paths["protocol"],
             private_case_map_path=paths["map"],
             private_source_manifest_path=paths["manifest"],
         )
@@ -309,6 +325,11 @@ def test_raw_review_rejects_duplicates_missing_cases_invalid_alias_and_bad_shape
     bad_alias["reviewed_admissible_tool_ids"] = ["candidate_tool_z"]
     paths["responses"].write_text(
         "\n".join([json.dumps(bad_alias), *lines[1:]]) + "\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        integration_module,
+        "EXPECTED_RAW_MODEL_REVIEW_SHA256",
+        file_sha256(paths["responses"]),
     )
     with pytest.raises(ArtifactIntegrityError, match="unknown tool aliases"):
         build_blind_model_review_evidence_v2(
@@ -326,6 +347,7 @@ def test_raw_review_rejects_duplicates_missing_cases_invalid_alias_and_bad_shape
             owner_manifest_path=OWNER_GOLDEN / "provisional_bundle_manifest.json",
             blind_packet_path=paths["packet"],
             raw_review_path=paths["responses"],
+            review_protocol_path=paths["protocol"],
             private_case_map_path=paths["map"],
             private_source_manifest_path=paths["manifest"],
         )
@@ -341,14 +363,35 @@ def test_registered_public_provenance_hashes_and_unblinding_are_exact() -> None:
     evidence = _load_public_evidence()
 
     assert evidence.provenance.source_packet_sha256 == EXPECTED_BLIND_PACKET_SHA256
+    assert evidence.provenance.review_protocol_sha256 == EXPECTED_REVIEW_PROTOCOL_SHA256
     assert evidence.provenance.private_map_sha256 == EXPECTED_PRIVATE_MAP_SHA256
     assert evidence.provenance.source_commit_sha == EXPECTED_SOURCE_COMMIT_SHA
     assert {
         record.blind_case_id: record.scenario_id for record in evidence.records
     } == EXPECTED_UNBLINDING
-    assert evidence.provenance.raw_review_sha256 == (
-        "668b643ea126c746ed0f35d1f3859992e4a1c11ec0df24a74f2c121411f33da1"
+    assert evidence.provenance.raw_review_sha256 == (EXPECTED_RAW_MODEL_REVIEW_SHA256)
+    verify_published_blind_model_review_sources_v2(
+        evidence.provenance,
+        blind_packet_path=SOURCE_EVIDENCE / "blind_review_packet.md",
+        raw_review_path=SOURCE_EVIDENCE / "raw_model_review_response.jsonl",
+        review_protocol_path=REVIEW_PROTOCOL,
     )
+
+
+def test_review_protocol_records_exact_session_and_identity_check_evidence() -> None:
+    evidence = _load_public_evidence()
+    protocol = REVIEW_PROTOCOL.read_text(encoding="utf-8")
+
+    assert evidence.provenance.reviewer_platform == "ChatGPT"
+    assert evidence.provenance.review_session_type.value == "TEMPORARY_CHAT"
+    assert evidence.provenance.reviewer_model_identifier == "NOT_RECORDED"
+    assert evidence.provenance.human_reviewer is False
+    assert evidence.provenance.packet_identity_check_passed is True
+    assert "Do not evaluate or solve any cases yet." in protocol
+    assert "schema_version: 2.1.0" in protocol
+    assert "candidate_tool_b, candidate_tool_a" in protocol
+    assert "This established packet availability and identity before review." in protocol
+    assert "Now perform the blind independent review using only the attached packet." in protocol
 
 
 def test_public_comparisons_are_source_aware_and_have_exact_expected_counts() -> None:
@@ -408,6 +451,7 @@ def test_model_review_stays_separate_from_owner_review_and_human_review() -> Non
     assert all(record.review_kind == BLIND_MODEL_REVIEW_KIND for record in evidence.records)
     assert b"BLIND_INDEPENDENT_MODEL_REVIEW" not in owner_bytes
     assert evidence.provenance.independent_human_review_performed is False
+    assert evidence.provenance.human_reviewer is False
     assert evidence.provenance.benchmark_frozen is False
     assert evidence.provenance.policy_evaluation_performed is False
 
@@ -425,6 +469,28 @@ def test_report_is_a_deterministic_projection_with_precise_claim_boundaries() ->
     assert "diagnostically useful but intentionally artificial" in rendered
     assert "candidate remains provisional and unfrozen" in rendered
     assert "No policy decisions" in rendered
+    assert "No live-model policy evaluation or runtime model invocation" in rendered
+    assert "completed external blind model-review session" in rendered
+    assert "No policy decisions, policy metrics, or runtime tool execution" in rendered
+    assert "No policy decisions, policy metrics, live models" not in rendered
+    assert "A clean public clone can verify" in rendered
+    assert "cannot repeat the original alias reversal" in rendered
+
+
+def test_provenance_distinguishes_policy_visible_manifests_from_withheld_evidence() -> None:
+    provenance = _load_public_evidence().provenance
+
+    assert "manifests" not in provenance.withheld_answer_bearing_sources
+    assert "owner_provisional_manifest" in provenance.withheld_answer_bearing_sources
+    assert "owner_review_records" in provenance.withheld_answer_bearing_sources
+    assert "private_case_map" in provenance.withheld_answer_bearing_sources
+    assert provenance.blind_packet_published is True
+    assert provenance.raw_review_published is True
+    assert provenance.private_map_published is False
+    assert provenance.private_source_manifest_published is False
+    assert provenance.public_clone_can_verify_source_packet is True
+    assert provenance.public_clone_can_verify_raw_response is True
+    assert provenance.public_clone_can_repeat_unblinding is False
 
 
 def test_canonical_evidence_serialization_is_byte_deterministic(tmp_path: Path) -> None:
@@ -455,35 +521,55 @@ def test_owner_evidence_hashes_remain_unchanged() -> None:
     assert actual == EXPECTED_OWNER_HASHES
 
 
-def test_public_bundle_excludes_private_sources_paths_and_blind_tool_aliases() -> None:
+def test_canonical_records_and_comparisons_remain_byte_identical() -> None:
+    assert file_sha256(PUBLIC_EVIDENCE / "model_review_records.jsonl") == (
+        "4340c0d23a40f1d5c0505bb64ef78ed6834580e6aafd721eb66f4cdaa5d88db8"
+    )
+    assert file_sha256(PUBLIC_EVIDENCE / "comparison_records.jsonl") == (
+        "b8713c9ea4e5776fa319ef0a7c31e2ed122cc83bf240fa5c5083719415b31b5b"
+    )
+
+
+def test_public_bundle_excludes_private_sources_and_paths() -> None:
     forbidden = (
         "/" + "Users/",
         "PRIVATE_" + "case_map",
         "PRIVATE_" + "source_manifest",
-        "candidate_tool_",
         "-".join(("tool", "choice", "contract", "trial", "independent", "review")),
     )
     files = tuple(path for path in PUBLIC_EVIDENCE.rglob("*") if path.is_file())
 
-    assert {path.name for path in files} == {
+    assert {str(path.relative_to(PUBLIC_EVIDENCE)) for path in files} == {
         "comparison_records.jsonl",
         "comparison_report.md",
         "model_review_records.jsonl",
+        "review_protocol.md",
         "review_provenance_manifest.json",
+        "source_evidence/blind_review_packet.md",
+        "source_evidence/raw_model_review_response.jsonl",
     }
     for path in files:
         text = path.read_text(encoding="utf-8")
         assert not any(value in text for value in forbidden), path
 
+    canonical_files = (
+        PUBLIC_EVIDENCE / "model_review_records.jsonl",
+        PUBLIC_EVIDENCE / "comparison_records.jsonl",
+        PUBLIC_EVIDENCE / "review_provenance_manifest.json",
+        PUBLIC_EVIDENCE / "comparison_report.md",
+    )
+    assert all(
+        "candidate_tool_" not in path.read_text(encoding="utf-8") for path in canonical_files
+    )
+
 
 def test_source_files_and_public_bundle_are_mutation_sensitive(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    evidence, paths = _write_synthetic_blind_sources(tmp_path, monkeypatch)
+    _, paths = _write_synthetic_blind_sources(tmp_path, monkeypatch)
     original_packet = paths["packet"].read_bytes()
     original_map = paths["map"].read_bytes()
     original_raw = paths["responses"].read_bytes()
-    original_record_hash = evidence.provenance.review_record_bundle_hash
 
     paths["packet"].write_bytes(original_packet + b"\n")
     with pytest.raises(ArtifactIntegrityError, match="packet hash"):
@@ -500,9 +586,13 @@ def test_source_files_and_public_bundle_are_mutation_sensitive(
     changed["review_notes"] = "A valid but mutated test-only review note."
     raw_rows[0] = json.dumps(changed, separators=(",", ":"), sort_keys=True)
     paths["responses"].write_text("\n".join(raw_rows) + "\n", encoding="utf-8")
-    mutated = _write_evidence_from_paths(paths)
-    assert mutated.provenance.raw_review_sha256 != evidence.provenance.raw_review_sha256
-    assert mutated.provenance.review_record_bundle_hash != original_record_hash
+    with pytest.raises(ArtifactIntegrityError, match="raw review hash"):
+        _write_evidence_from_paths(paths)
+
+    paths["responses"].write_bytes(original_raw)
+    paths["protocol"].write_bytes(REVIEW_PROTOCOL.read_bytes() + b"\n")
+    with pytest.raises(ArtifactIntegrityError, match="review protocol hash"):
+        _write_evidence_from_paths(paths)
 
 
 def _write_evidence_from_paths(paths: dict[str, Path]) -> BlindModelReviewEvidenceBundleV2:
@@ -521,6 +611,7 @@ def _write_evidence_from_paths(paths: dict[str, Path]) -> BlindModelReviewEviden
         owner_manifest_path=OWNER_GOLDEN / "provisional_bundle_manifest.json",
         blind_packet_path=paths["packet"],
         raw_review_path=paths["responses"],
+        review_protocol_path=paths["protocol"],
         private_case_map_path=paths["map"],
         private_source_manifest_path=paths["manifest"],
     )

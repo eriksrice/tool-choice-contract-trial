@@ -7,13 +7,23 @@
 ## Provenance
 
 - Review protocol: `blind_model_review_001`
+- Review protocol SHA-256: `4193e72ea938bdf4a1629b5807c1295f31511b7ea4e773568e684f5ab269f8d3`
+- Reviewer platform: `ChatGPT`
+- Review session type: `TEMPORARY_CHAT`
+- Exact model identifier: `NOT_RECORDED`
+- Human reviewer: no
 - Source commit: `c11741b5e628354ed0fdcae46e1e8c7908fe109a`
 - Blind packet SHA-256: `a3a10982ada95885b8d74b55e4b9c36ee51282161cd831614a46fa54d3275ab7`
 - Private map SHA-256: `afe4b4dccdbc050c0283a29593c2b3bdfe4602c11b31f3d408a68d933ab0a8a3`
 - Raw response SHA-256: `668b643ea126c746ed0f35d1f3859992e4a1c11ec0df24a74f2c121411f33da1`
 - Reviewer input: shuffled policy-visible cases with per-case aliased tool IDs.
-- Withheld from reviewer: `computed_findings`, `expectations`, `manifests`, `owner_reviews`, `policy_outputs`, `repository_history`.
+- Withheld from reviewer: `computed_findings`, `oracle_expectations`, `owner_provisional_manifest`, `owner_review_records`, `policy_outputs`, `private_case_map`, `repository_history`.
 - Responses: one JSONL record per blind case.
+- Packet identity check passed: yes
+- Blind packet published: yes
+- Raw model-review response published: yes
+- Private case map published: no
+- Private source manifest published: no
 - Independent human review performed: no
 - Policy decisions used: no
 
@@ -60,10 +70,17 @@
 
 Ecological-validity flags do not change oracle agreement, evaluation-unit status, or row-level readiness.
 
+## Reproducibility boundary
+
+A clean public clone can verify the exact blind packet, raw model-review response, review protocol, canonical records, three-way comparisons, provenance counts and hashes, deterministic report, and consistency with owner and computed repository evidence.
+
+A clean public clone cannot repeat the original alias reversal because the reversible private case map and private source manifest remain unpublished. The provenance manifest provides cryptographic commitments to those retained private files, not public access to them.
+
 ## Interpretation boundary
 
 - The owner-review artifacts remain separate and unchanged.
 - Independent human review has not been performed.
 - Row-level agreement does not freeze the provisional candidate.
-- No policy decisions, policy metrics, live models, or tool execution are included.
+- No live-model policy evaluation or runtime model invocation is part of the repository. The evidence records a completed external blind model-review session.
+- No policy decisions, policy metrics, or runtime tool execution are included.
 - No benchmark-validity, production, or cross-domain claim follows.

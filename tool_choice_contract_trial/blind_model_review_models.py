@@ -35,6 +35,10 @@ class BlindModelReviewComparisonStatusV2(StrEnum):
     INVALID_REVIEW_ARTIFACT = "INVALID_REVIEW_ARTIFACT"
 
 
+class BlindModelReviewSessionTypeV2(StrEnum):
+    TEMPORARY_CHAT = "TEMPORARY_CHAT"
+
+
 def _sorted_unique(values: tuple[str, ...], field_name: str) -> tuple[str, ...]:
     if len(values) != len(set(values)):
         raise ValueError(f"{field_name} must not contain duplicates")
@@ -342,6 +346,7 @@ class BlindModelReviewProvenanceManifestV2(V2ContractModel):
     source_commit_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
     source_scenario_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_packet_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    review_protocol_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     private_map_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     private_source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     response_template_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -366,8 +371,18 @@ class BlindModelReviewProvenanceManifestV2(V2ContractModel):
     shuffled_cases: Literal[True]
     per_case_aliased_tool_ids: Literal[True]
     response_format: Literal["JSONL"]
+    reviewer_platform: Literal["ChatGPT"]
+    review_session_type: BlindModelReviewSessionTypeV2
+    reviewer_model_identifier: Literal["NOT_RECORDED"]
+    human_reviewer: Literal[False]
+    packet_identity_check_passed: Literal[True]
+    blind_packet_published: Literal[True]
+    raw_review_published: Literal[True]
     private_map_published: Literal[False]
-    raw_blind_packet_published: Literal[False]
+    private_source_manifest_published: Literal[False]
+    public_clone_can_verify_source_packet: Literal[True]
+    public_clone_can_verify_raw_response: Literal[True]
+    public_clone_can_repeat_unblinding: Literal[False]
     independent_human_review_performed: Literal[False]
     benchmark_frozen: Literal[False]
     policy_evaluation_performed: Literal[False]

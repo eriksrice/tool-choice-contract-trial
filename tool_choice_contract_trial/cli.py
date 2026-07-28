@@ -92,6 +92,7 @@ def _build_parser() -> argparse.ArgumentParser:
     integrate_blind_review.add_argument("--owner-manifest", type=_path, required=True)
     integrate_blind_review.add_argument("--blind-packet", type=_path, required=True)
     integrate_blind_review.add_argument("--blind-responses", type=_path, required=True)
+    integrate_blind_review.add_argument("--review-protocol", type=_path, required=True)
     integrate_blind_review.add_argument("--private-case-map", type=_path, required=True)
     integrate_blind_review.add_argument("--private-source-manifest", type=_path, required=True)
     integrate_blind_review.add_argument("--records", type=_path, required=True)
@@ -198,6 +199,7 @@ def _integrate_blind_model_review_v2(args: argparse.Namespace) -> None:
         owner_manifest_path=args.owner_manifest,
         blind_packet_path=args.blind_packet,
         raw_review_path=args.blind_responses,
+        review_protocol_path=args.review_protocol,
         private_case_map_path=args.private_case_map,
         private_source_manifest_path=args.private_source_manifest,
     )

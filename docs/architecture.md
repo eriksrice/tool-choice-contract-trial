@@ -52,13 +52,13 @@ Milestone 2B review-candidate path
                                                                +-> invalid-unit register
 
 Blind independent model-review evidence path
-  local-only blind packet + response + private map --+
-  source-verified v2 relation + owner evidence -------+-> canonical unblinded records
-                                                       +-> three-way comparisons
-                                                       +-> public-safe provenance + report
+  published blind packet + raw response -----------+
+  retained private map + private source manifest ---+-> canonical unblinded records
+  source-verified v2 relation + owner evidence -----+-> three-way comparisons
+                                                     +-> public provenance + report
 ```
 
-The loading paths are separate in code. `policy_io.py` handles v1 policy-visible scenarios and stored decisions; `oracle_io.py`, `evaluation_io.py`, and `counterfactual_io.py` handle v1 evaluator-only material. `v2_io.py` validates the separately stored v2 policy views, proposals, and owner reviews. The v2 relation checker receives only `PolicyViewV2`, and neither v2 evidence command has a policy-decision input. The model-review integrator validates the registered source hashes, reverses per-case aliases with the local-only private map, then compares canonical model output with source-verified owner and computed relations. Boundary tests confirm that policy-visible identifiers and inputs do not expose answer labels, review state, family labels, or comparison metadata.
+The loading paths are separate in code. `policy_io.py` handles v1 policy-visible scenarios and stored decisions; `oracle_io.py`, `evaluation_io.py`, and `counterfactual_io.py` handle v1 evaluator-only material. `v2_io.py` validates the separately stored v2 policy views, proposals, and owner reviews. The v2 relation checker receives only `PolicyViewV2`, and neither v2 evidence command has a policy-decision input. The model-review integrator validates the registered source hashes, reverses per-case aliases with the retained private map, then compares canonical model output with source-verified owner and computed relations. A public clone can verify the published packet, raw response, protocol, canonical artifacts, and repository comparisons, but cannot independently repeat the original alias reversal. Boundary tests confirm that policy-visible identifiers and inputs do not expose answer labels, review state, family labels, or comparison metadata.
 
 ## Version boundary
 
@@ -94,7 +94,7 @@ The deterministic bundle excludes volatile metadata. Serialization uses UTF-8, s
 - `tool_choice_contract_trial/v2_validation.py`: proposal/review comparison and provisional manifest assembly.
 - `tool_choice_contract_trial/v2_reporting.py`: pure v2 review-packet projection.
 - `tool_choice_contract_trial/blind_model_review_models.py`: strict model-review record, comparison, and public provenance types.
-- `tool_choice_contract_trial/blind_model_review.py`: source hashing, unblinding, and source-aware three-way comparison.
+- `tool_choice_contract_trial/blind_model_review.py`: source hashing, retained-map unblinding, public-source verification, and source-aware three-way comparison.
 - `tool_choice_contract_trial/blind_model_review_reporting.py`: pure blind model-review report projection.
 - `tool_choice_contract_trial/policy.py`: replay adapter.
 - `tool_choice_contract_trial/serialization.py`: canonical JSON and hashing.

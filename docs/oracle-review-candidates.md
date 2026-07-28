@@ -55,11 +55,13 @@ The owner also accepted `v2_scenario_007` while noting a nonblocking ecological-
 
 ## Blind independent model-review evidence
 
-The additive `BLIND_INDEPENDENT_MODEL_REVIEW` layer is distinct from `OracleReviewRecordV2` and leaves every owner record unchanged. The reviewer received only a shuffled blind policy-visible packet with per-case aliased tool IDs. Expectations, computed findings, owner reviews, manifests, repository history, and policy outputs were withheld. The public bundle contains canonical unblinded records, three-way comparisons, a provenance manifest with source hashes, and a pure Markdown report; it excludes the raw packet and private reversible map.
+The additive `BLIND_INDEPENDENT_MODEL_REVIEW` layer is distinct from `OracleReviewRecordV2` and leaves every owner record unchanged. The reviewer used ChatGPT in a Temporary Chat; the exact model identifier was not recorded, and no human reviewer participated. The reviewer received only a shuffled blind policy-visible packet with per-case aliased tool IDs. Oracle expectations, computed findings, owner-review records, the owner provisional manifest, repository history, policy outputs, and the private case map were withheld. The public bundle contains the exact reviewed packet, exact raw response, exact protocol, canonical unblinded records, three-way comparisons, a provenance manifest with source hashes, and a pure Markdown report.
+
+The reversible private case map and private source manifest remain unpublished. A public clone can verify the packet, raw response, protocol, canonical artifacts, provenance, report rendering, and consistency with owner and computed repository evidence. It cannot independently repeat the original alias reversal; the published provenance provides cryptographic commitments to the two retained private files rather than public access to them.
 
 All 12 model-review records report `HIGH` confidence and no semantic ambiguity. All 12 state, admissible-set, and decision relations fully agree with both owner-reviewed values and the source-verified computed relation. Every record preserves its ecological-validity flag and note. Eleven notes express one bundle-level limitation—that synthetic, self-declared manifests are not runtime-verified—rather than eleven distinct case defects. Scenario 007 separately flags the artificiality of `verified_transcript` for the stated task, and scenario 012 flags the diagnostic but intentional artificiality of the contradictory contract. These concerns do not alter relation agreement or evaluation-unit validity.
 
-See the canonical [blind independent model-review report](../fixtures/milestone_2b/blind_model_review_001/comparison_report.md).
+See the canonical [blind independent model-review report](../fixtures/milestone_2b/blind_model_review_001/comparison_report.md), [review protocol](../fixtures/milestone_2b/blind_model_review_001/review_protocol.md), [reviewed packet](../fixtures/milestone_2b/blind_model_review_001/source_evidence/blind_review_packet.md), and [raw response](../fixtures/milestone_2b/blind_model_review_001/source_evidence/raw_model_review_response.jsonl).
 
 ## Invalidity boundary
 

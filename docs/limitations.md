@@ -37,7 +37,7 @@ The separate v2.1 review candidate contains exactly three fictional enterprise k
 
 The owner accepted the logical relation for `v2_scenario_007` but noted that its `verified_transcript` requirement is somewhat artificial for the stated knowledge-packet task. That nonblocking ecological-validity concern should be reconsidered before any claim-grade freeze.
 
-The blind independent model review preserved ecological-validity flags for every case. Eleven notes describe one general declared-manifest realism limitation: synthetic, self-declared profiles are not runtime-verified. Scenario 007 repeats the `verified_transcript` caveat, while scenario 012 identifies the deliberate contradiction as diagnostically useful but intentionally artificial. These flags do not establish oracle disagreement or evaluation-unit invalidity.
+The blind independent model review preserved ecological-validity flags for every case. Eleven notes describe one general declared-manifest realism limitation: synthetic, self-declared profiles are not runtime-verified. Scenario 007 repeats the `verified_transcript` caveat, while scenario 012 identifies the deliberate contradiction as diagnostically useful but intentionally artificial. These flags do not establish oracle disagreement or evaluation-unit invalidity. The exact packet, raw response, and protocol are public, but the retained private map is required to repeat the original alias reversal; its hash commitment is not a substitute for public access.
 
 The checked-in decisions are a trusted replay chosen to exercise mechanics. They are not evidence that one policy outperforms another.
 
@@ -51,6 +51,7 @@ The checked-in decisions are a trusted replay chosen to exercise mechanics. They
 - A malformed stored replay row is structurally invalid before scoring; per-case `MALFORMED` represents a normalized observation at an adapter boundary.
 - The v2 input and output pairs are controlled in their authoring design, but the v1 counterfactual analyzer cannot validate them and no v2 counterfactual finding is claimed.
 - Owner agreement makes all 12 rows individually ready for scoring and row-level freeze under the current lifecycle mechanics. The 12/12 blind independent model-review agreement adds a separate evidence layer, but it does not constitute independent human review or make the bundle frozen.
+- The completed external model-review session is evidence, not repository-integrated live-model policy evaluation. The repository performs no runtime model invocation or tool execution.
 - Replacement `v2_scenario_012` is `REVIEW_COMPLETE` and scoreable, while the current invalid-unit register remains empty.
 
 ## System boundary
