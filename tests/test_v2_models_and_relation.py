@@ -13,6 +13,7 @@ from tool_choice_contract_trial.v2_io import (
     load_policy_views_v2,
 )
 from tool_choice_contract_trial.v2_models import (
+    ClauseWitnessV2,
     OracleStateV2,
     OracleValidationFindingV2,
     PolicyViewV2,
@@ -22,6 +23,7 @@ from tool_choice_contract_trial.v2_models import (
 from tool_choice_contract_trial.v2_registry import (
     OUTPUT_CITATIONS_V2,
     TOOL_PROHIBITION_V2,
+    TOOL_REQUIREMENT_V2,
     V2_RELATION_CLAUSE_REGISTRY,
 )
 from tool_choice_contract_trial.v2_relation import assess_policy_view_v2
@@ -94,16 +96,127 @@ def test_explicit_prohibition_family_relations(v2_views: dict[str, PolicyViewV2]
     first = assess_policy_view_v2(v2_views["v2_scenario_009"])
     second = assess_policy_view_v2(v2_views["v2_scenario_010"])
     prohibit_all = assess_policy_view_v2(v2_views["v2_scenario_011"])
-    unavailable = assess_policy_view_v2(v2_views["v2_scenario_012"])
+    contradiction = assess_policy_view_v2(v2_views["v2_scenario_012"])
 
     assert first.admissible_tool_ids == ("v2_tool_006",)
     assert second.admissible_tool_ids == ("v2_tool_005",)
     assert prohibit_all.oracle_state is OracleStateV2.NO_ADMISSIBLE
-    assert unavailable.oracle_state is OracleStateV2.CONTRACT_INVALID
-    assert unavailable.admissible_tool_ids == ()
-    assert unavailable.contract_invalid_reasons == (
-        "forbidden tool ID is unavailable: v2_tool_099",
+    assert contradiction.oracle_state is OracleStateV2.CONTRACT_INVALID
+    assert contradiction.admissible_tool_ids == ()
+    assert contradiction.contract_invalid_reasons == (
+        "required tool is also explicitly forbidden: v2_tool_005",
     )
+    assert contradiction.witnesses == ()
+
+
+def test_required_tool_defaults_to_none(v2_views: dict[str, PolicyViewV2]) -> None:
+    payload = v2_views["v2_scenario_004"].contract.model_dump(mode="json")
+    payload.pop("required_tool_id")
+
+    assert TaskContractV2.model_validate(payload).required_tool_id is None
+
+
+def test_matching_required_tool_is_unique_and_other_tool_has_registry_witness(
+    v2_views: dict[str, PolicyViewV2],
+) -> None:
+    view = v2_views["v2_scenario_004"]
+    contract = view.contract.model_copy(update={"required_tool_id": "v2_tool_001"})
+    changed = PolicyViewV2.model_validate(
+        view.model_copy(update={"contract": contract}).model_dump(mode="json")
+    )
+
+    relation = assess_policy_view_v2(changed)
+    witness = next(
+        witness for witness in relation.witnesses if witness.clause_id == TOOL_REQUIREMENT_V2
+    )
+
+    assert relation.oracle_state is OracleStateV2.UNIQUE_ADMISSIBLE
+    assert relation.admissible_tool_ids == ("v2_tool_001",)
+    assert witness.tool_id == "v2_tool_002"
+    assert witness.failure_code.value == "F_REQUIRED_TOOL_MISMATCH"
+    assert witness.contract_fields == ("contract.required_tool_id",)
+    assert witness.manifest_fields == ("manifest.tool_id",)
+    assert witness.expected_values == ("v2_tool_001",)
+    assert witness.actual_values == ("v2_tool_002",)
+
+    payload = witness.model_dump(mode="json")
+    payload["failure_code"] = "F_EXPLICIT_PROHIBITION"
+    with pytest.raises(ValidationError, match="failure_code"):
+        ClauseWitnessV2.model_validate(payload)
+
+
+def test_unavailable_required_tool_is_no_admissible_not_contract_invalid(
+    v2_views: dict[str, PolicyViewV2],
+) -> None:
+    view = v2_views["v2_scenario_004"]
+    contract = view.contract.model_copy(update={"required_tool_id": "v2_tool_099"})
+    changed = PolicyViewV2.model_validate(
+        view.model_copy(update={"contract": contract}).model_dump(mode="json")
+    )
+
+    relation = assess_policy_view_v2(changed)
+
+    assert relation.oracle_state is OracleStateV2.NO_ADMISSIBLE
+    assert relation.admissible_tool_ids == ()
+    assert relation.contract_invalid_reasons == ()
+    assert [
+        (witness.tool_id, witness.clause_id, witness.failure_code.value)
+        for witness in relation.witnesses
+    ] == [
+        ("v2_tool_001", TOOL_REQUIREMENT_V2, "F_REQUIRED_TOOL_MISMATCH"),
+        ("v2_tool_002", TOOL_REQUIREMENT_V2, "F_REQUIRED_TOOL_MISMATCH"),
+    ]
+
+
+def test_unavailable_forbidden_tool_is_redundant_not_contract_invalid(
+    v2_views: dict[str, PolicyViewV2],
+) -> None:
+    view = v2_views["v2_scenario_004"]
+    contract = view.contract.model_copy(update={"forbidden_tool_ids": ("v2_tool_099",)})
+    changed = PolicyViewV2.model_validate(
+        view.model_copy(update={"contract": contract}).model_dump(mode="json")
+    )
+
+    relation = assess_policy_view_v2(changed)
+
+    assert relation.oracle_state is OracleStateV2.MULTIPLE_ADMISSIBLE
+    assert relation.admissible_tool_ids == ("v2_tool_001", "v2_tool_002")
+    assert relation.contract_invalid_reasons == ()
+
+
+def test_scenarios_001_through_011_preserve_relations(
+    v2_views: dict[str, PolicyViewV2],
+) -> None:
+    expected = {
+        "v2_scenario_001": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_001",)),
+        "v2_scenario_002": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_002",)),
+        "v2_scenario_003": (OracleStateV2.NO_ADMISSIBLE, ()),
+        "v2_scenario_004": (
+            OracleStateV2.MULTIPLE_ADMISSIBLE,
+            ("v2_tool_001", "v2_tool_002"),
+        ),
+        "v2_scenario_005": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_003",)),
+        "v2_scenario_006": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_004",)),
+        "v2_scenario_007": (OracleStateV2.NO_ADMISSIBLE, ()),
+        "v2_scenario_008": (
+            OracleStateV2.MULTIPLE_ADMISSIBLE,
+            ("v2_tool_003", "v2_tool_004"),
+        ),
+        "v2_scenario_009": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_006",)),
+        "v2_scenario_010": (OracleStateV2.UNIQUE_ADMISSIBLE, ("v2_tool_005",)),
+        "v2_scenario_011": (OracleStateV2.NO_ADMISSIBLE, ()),
+    }
+
+    actual = {
+        scenario_id: (
+            assess_policy_view_v2(v2_views[scenario_id]).oracle_state,
+            assess_policy_view_v2(v2_views[scenario_id]).admissible_tool_ids,
+        )
+        for scenario_id in expected
+    }
+
+    assert all(v2_views[scenario_id].contract.required_tool_id is None for scenario_id in expected)
+    assert actual == expected
 
 
 def test_minimal_pair_catalogs_are_equal_and_only_typed_requirement_changes(
@@ -170,6 +283,7 @@ def test_v2_registry_is_explicit_and_milestone_bounded() -> None:
         "output.citations",
         "output.requirement",
         "tool.prohibition",
+        "tool.requirement",
     }
     assert {
         clause_id: clause.expected_failure_code
@@ -181,6 +295,7 @@ def test_v2_registry_is_explicit_and_milestone_bounded() -> None:
         "output.citations": "F_OUTPUT_CONTRACT_MISMATCH",
         "output.requirement": "F_OUTPUT_CONTRACT_MISMATCH",
         "tool.prohibition": "F_EXPLICIT_PROHIBITION",
+        "tool.requirement": "F_REQUIRED_TOOL_MISMATCH",
     }
 
 

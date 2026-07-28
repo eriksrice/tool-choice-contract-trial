@@ -61,9 +61,6 @@ def render_oracle_review_packet_v2(
     agree_count = sum(
         review.disposition is OracleReviewDispositionV2.AGREE for review in review_rows
     )
-    disagree_count = sum(
-        review.disposition is OracleReviewDispositionV2.DISAGREE for review in review_rows
-    )
     owner_review_count = sum(
         review.reviewer_role == "owner_reviewer"
         and review.disposition is not OracleReviewDispositionV2.PENDING
@@ -74,29 +71,52 @@ def render_oracle_review_packet_v2(
         and review.disposition is not OracleReviewDispositionV2.PENDING
         for review in review_rows
     )
-    unadjudicated_disagreement_count = sum(
-        review.disposition is OracleReviewDispositionV2.DISAGREE
-        and review.adjudicated_state is None
-        and review.adjudicated_admissible_tool_ids is None
-        for review in review_rows
+    pending_scenario_ids = tuple(
+        sorted(
+            review.scenario_id
+            for review in review_rows
+            if review.disposition is OracleReviewDispositionV2.PENDING
+        )
     )
     owner_review_statement = (
-        f"complete for all {len(review_rows)} cases"
+        f"complete for all {len(review_rows)} current candidates"
         if owner_review_count == len(review_rows)
-        else f"complete for {owner_review_count} of {len(review_rows)} cases"
+        else f"complete for {owner_review_count} of {len(review_rows)} current candidates"
     )
+    replacement_review = reviews_by_id.get("v2_scenario_012")
+    if (
+        not pending_scenario_ids
+        and replacement_review is not None
+        and replacement_review.disposition is OracleReviewDispositionV2.AGREE
+    ):
+        pending_review_statement = (
+            "The replacement `v2_scenario_012` contradiction was approved during owner re-review."
+        )
+    elif not pending_scenario_ids:
+        pending_review_statement = "No owner-review candidates are pending."
+    elif pending_scenario_ids == ("v2_scenario_012",):
+        pending_review_statement = "The replacement `v2_scenario_012` awaits owner re-review."
+    else:
+        pending_review_statement = (
+            f"Pending owner-review candidates: {_values(pending_scenario_ids)}."
+        )
     independent_review_statement = (
         "Independent review has not been performed."
         if independent_review_count == 0
         else f"Independent review is recorded for {independent_review_count} cases."
     )
+    owner_review_instruction = (
+        "Owner review is complete for all 12 current candidates, including replacement "
+        "`v2_scenario_012`."
+        if owner_review_count == len(review_rows)
+        else "Owner review is not complete for all current candidates."
+    )
 
     lines = [
         "# Tool Choice Contract Trial — Milestone 2B Oracle Review Packet",
         "",
-        f"> Owner review: {owner_review_statement}; {agree_count} proposals accepted and "
-        f"{disagree_count} disputed. {unadjudicated_disagreement_count} dispute remains "
-        "unadjudicated.",
+        f"> Owner review: {owner_review_statement}; {agree_count} proposals accepted. "
+        f"{pending_review_statement}",
         "",
         f"> {independent_review_statement} The bundle is not frozen, and no policy decisions "
         "were used.",
@@ -104,6 +124,7 @@ def render_oracle_review_packet_v2(
         "## Bundle summary",
         "",
         f"- Bundle status: `{manifest.bundle_status.value}`",
+        f"- Artifact schema versions: {_values(manifest.artifact_schema_versions)}",
         f"- Scenario count: {len(manifest.scenario_artifacts)}",
         f"- Pending-review count: {manifest.pending_review_count}",
         f"- Evaluation-unit-invalid count: {manifest.invalid_unit_count}",
@@ -151,7 +172,9 @@ def render_oracle_review_packet_v2(
                 f"{_values(contract.accepted_authority_profiles)}; inputs "
                 f"{_values(contract.required_input_profiles)}; outputs "
                 f"{_values(contract.required_output_profiles)}; citations "
-                f"{'required' if contract.citations_required else 'not required'}; forbidden "
+                f"{'required' if contract.citations_required else 'not required'}; required tool "
+                f"{f'`{contract.required_tool_id}`' if contract.required_tool_id else 'none'}; "
+                "forbidden "
                 f"{_values(contract.forbidden_tool_ids)}.",
                 "- Available manifests:",
             ]
@@ -215,10 +238,9 @@ def render_oracle_review_packet_v2(
         [
             "## Human review instructions",
             "",
-            "Independent review remains outstanding. It should assess the proposed state, "
-            "admissible set, and rationale without policy outputs and must remain distinct from "
-            "the recorded owner review. The unresolved disagreement requires adjudication before "
-            "that evaluation unit can become coherent.",
+            f"{owner_review_instruction} Independent review remains outstanding and must assess "
+            "the proposed state, admissible set, and rationale without policy outputs. Any future "
+            "disagreement would require separate adjudication.",
             "",
             "## Interpretation boundary",
             "",

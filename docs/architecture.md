@@ -54,7 +54,7 @@ The loading paths are separate in code. `policy_io.py` handles v1 policy-visible
 
 ## Version boundary
 
-The v1 models, schemas, fixtures, registry, commands, and canonical outputs remain frozen for Milestones 1 and 2A. V2 uses explicit `*V2` models, its own relation registry, `schemas/v2/`, and `fixtures/milestone_2b/`. This is an intentionally narrow parallel layer, not a migration framework: v2 does not rewrite, upgrade, or reinterpret v1 artifacts.
+The v1 models, schemas, fixtures, registry, commands, and canonical outputs remain frozen for Milestones 1 and 2A. The current v2.1 candidate uses explicit `*V2` models, its own relation registry, `schemas/v2/`, and `fixtures/milestone_2b/`. Git history preserves the earlier v2.0 candidate. This is an intentionally narrow parallel layer, not a migration framework: v2 does not rewrite, upgrade, or reinterpret v1 artifacts, and mixed v2 candidate versions are not supported in one bundle.
 
 ## Declared-manifest boundary
 

@@ -14,6 +14,7 @@ INPUT_REQUIREMENT_V2 = "input.requirement"
 OUTPUT_REQUIREMENT_V2 = "output.requirement"
 OUTPUT_CITATIONS_V2 = "output.citations"
 TOOL_PROHIBITION_V2 = "tool.prohibition"
+TOOL_REQUIREMENT_V2 = "tool.requirement"
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,11 @@ V2_RELATION_CLAUSE_REGISTRY: Mapping[str, RelationClauseSpecV2] = MappingProxyTy
             contract_fields=("contract.forbidden_tool_ids",),
             manifest_fields=("manifest.tool_id",),
             expected_failure_code="F_EXPLICIT_PROHIBITION",
+        ),
+        TOOL_REQUIREMENT_V2: RelationClauseSpecV2(
+            contract_fields=("contract.required_tool_id",),
+            manifest_fields=("manifest.tool_id",),
+            expected_failure_code="F_REQUIRED_TOOL_MISMATCH",
         ),
     }
 )

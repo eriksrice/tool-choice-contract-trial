@@ -1,17 +1,18 @@
 # Tool Choice Contract Trial — Milestone 2B Oracle Review Packet
 
-> Owner review: complete for all 12 cases; 11 proposals accepted and 1 disputed. 1 dispute remains unadjudicated.
+> Owner review: complete for all 12 current candidates; 12 proposals accepted. The replacement `v2_scenario_012` contradiction was approved during owner re-review.
 
 > Independent review has not been performed. The bundle is not frozen, and no policy decisions were used.
 
 ## Bundle summary
 
 - Bundle status: `PROVISIONAL_REVIEW_CANDIDATE`
+- Artifact schema versions: `2.1.0`
 - Scenario count: 12
 - Pending-review count: 0
-- Evaluation-unit-invalid count: 1
+- Evaluation-unit-invalid count: 0
 - Computed contract-invalid count: 1
-- Relation-registry hash: `f761822f7fec61ecb68cdcfaae419800a1523fb91022b0dd23e31e8533023d3a`
+- Relation-registry hash: `df10cf5eef01c44ebc245f116a1625c5ee4fc8a53ae62ab51732b331aeb4a175`
 
 ## Scenario review entries
 
@@ -19,7 +20,7 @@
 
 - Family: Fictional enterprise knowledge packet — input profiles
 - Task: Prepare an internal knowledge packet from the supplied source material.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `structured_json`; outputs `narrative_summary`; citations required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `structured_json`; outputs `narrative_summary`; citations required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_001`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `structured_json`; outputs `narrative_summary`; citations yes.
   - `v2_tool_002`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `tabular_csv`; outputs `narrative_summary`; citations yes.
@@ -45,7 +46,7 @@
 
 - Family: Fictional enterprise knowledge packet — input profiles
 - Task: Prepare an internal knowledge packet from the supplied source material.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `tabular_csv`; outputs `narrative_summary`; citations required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `tabular_csv`; outputs `narrative_summary`; citations required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_001`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `structured_json`; outputs `narrative_summary`; citations yes.
   - `v2_tool_002`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `tabular_csv`; outputs `narrative_summary`; citations yes.
@@ -71,7 +72,7 @@
 
 - Family: Fictional enterprise knowledge packet — input profiles
 - Task: Prepare an internal knowledge packet from the supplied source material.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `image_archive`; outputs `narrative_summary`; citations required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `image_archive`; outputs `narrative_summary`; citations required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_001`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `structured_json`; outputs `narrative_summary`; citations yes.
   - `v2_tool_002`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `tabular_csv`; outputs `narrative_summary`; citations yes.
@@ -98,7 +99,7 @@
 
 - Family: Fictional enterprise knowledge packet — input profiles
 - Task: Prepare an internal knowledge packet from the supplied source material.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_001`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `structured_json`; outputs `narrative_summary`; citations yes.
   - `v2_tool_002`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`, `tabular_csv`; outputs `narrative_summary`; citations yes.
@@ -124,7 +125,7 @@
 
 - Family: Fictional enterprise knowledge packet — output and evidence profiles
 - Task: Prepare an internal knowledge packet in the required evidence format.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `structured_extracts`; citations not required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `structured_extracts`; citations not required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_003`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`, `structured_extracts`; citations yes.
   - `v2_tool_004`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`, `narrative_summary`; citations no.
@@ -150,7 +151,7 @@
 
 - Family: Fictional enterprise knowledge packet — output and evidence profiles
 - Task: Prepare an internal knowledge packet in the required evidence format.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`; citations not required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`; citations not required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_003`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`, `structured_extracts`; citations yes.
   - `v2_tool_004`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`, `narrative_summary`; citations no.
@@ -176,7 +177,7 @@
 
 - Family: Fictional enterprise knowledge packet — output and evidence profiles
 - Task: Prepare an internal knowledge packet in the required evidence format.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `verified_transcript`; citations not required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `verified_transcript`; citations not required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_003`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`, `structured_extracts`; citations yes.
   - `v2_tool_004`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`, `narrative_summary`; citations no.
@@ -203,7 +204,7 @@
 
 - Family: Fictional enterprise knowledge packet — output and evidence profiles
 - Task: Prepare an internal knowledge packet in the required evidence format.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations not required; forbidden none.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations not required; required tool none; forbidden none.
 - Available manifests:
   - `v2_tool_003`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`, `structured_extracts`; citations yes.
   - `v2_tool_004`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `audit_table`, `narrative_summary`; citations no.
@@ -229,7 +230,7 @@
 
 - Family: Fictional enterprise knowledge packet — explicit prohibition
 - Task: Prepare an internal knowledge packet using an allowed service.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; forbidden `v2_tool_005`.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; required tool none; forbidden `v2_tool_005`.
 - Available manifests:
   - `v2_tool_005`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
   - `v2_tool_006`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
@@ -255,7 +256,7 @@
 
 - Family: Fictional enterprise knowledge packet — explicit prohibition
 - Task: Prepare an internal knowledge packet using an allowed service.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; forbidden `v2_tool_006`.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; required tool none; forbidden `v2_tool_006`.
 - Available manifests:
   - `v2_tool_005`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
   - `v2_tool_006`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
@@ -281,7 +282,7 @@
 
 - Family: Fictional enterprise knowledge packet — explicit prohibition
 - Task: Prepare an internal knowledge packet using an allowed service.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; forbidden `v2_tool_005`, `v2_tool_006`.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; required tool none; forbidden `v2_tool_005`, `v2_tool_006`.
 - Available manifests:
   - `v2_tool_005`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
   - `v2_tool_006`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
@@ -304,35 +305,35 @@
 - Ready for scoring: yes
 - Ready for freeze: yes
 
-### `v2_scenario_012` — Unavailable forbidden tool reference
+### `v2_scenario_012` — Required tool explicitly prohibited
 
 - Family: Fictional enterprise knowledge packet — explicit prohibition
 - Task: Prepare an internal knowledge packet using an allowed service.
-- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; forbidden `v2_tool_099`.
+- Requirements: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations required; required tool `v2_tool_005`; forbidden `v2_tool_005`.
 - Available manifests:
   - `v2_tool_005`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
   - `v2_tool_006`: capabilities `knowledge_packet_preparation`; authority `approved_enterprise`; inputs `plain_text`; outputs `narrative_summary`; citations yes.
 - Relation witnesses:
   - none
 - Computed relation: `CONTRACT_INVALID` with none; decision `INVALID_CONTRACT`.
-- Contract-invalid reasons: `forbidden tool ID is unavailable: v2_tool_099`
+- Contract-invalid reasons: `required tool is also explicitly forbidden: v2_tool_005`
 - Proposed expectation: `CONTRACT_INVALID` with none; decision `INVALID_CONTRACT`.
-- Authoring rationale: The contract forbids an unavailable opaque tool ID and is intentionally contract-invalid.
+- Authoring rationale: The contract explicitly requires and forbids the same available tool, v2_tool_005.
 - Proposal matches computed relation: yes
 - Reviewer role: `owner_reviewer`
-- Review: `DISAGREE`; readiness `ADJUDICATION_REQUIRED`.
-- Reviewed relation: `MULTIPLE_ADMISSIBLE` with `v2_tool_005`, `v2_tool_006`.
+- Review: `AGREE`; readiness `REVIEW_COMPLETE`.
+- Reviewed relation: `CONTRACT_INVALID` with none.
 - Review performed without policy outputs: yes
-- Review note: An unavailable ID in a prohibition list is not inherently contract-invalid. Unless forbidden_tool_ids is explicitly defined as a scenario-local subset of the currently available tool IDs, the prohibition of v2_tool_099 is redundant and both available tools remain admissible. The scenario or ontology rule requires revision before approval.
+- Review note: The contract explicitly requires and forbids the same available tool, v2_tool_005. Those obligations cannot be satisfied simultaneously, so CONTRACT_INVALID with an empty admissible set and INVALID_CONTRACT is the contract-faithful result.
 - Adjudication: none.
-- Classification: computed contract state `CONTRACT_INVALID`; evaluation-unit status `EVALUATION_UNIT_INVALID`.
-- Invalid-unit reasons: `completed disagreement lacks adjudication`
-- Ready for scoring: no
-- Ready for freeze: no
+- Classification: computed contract state `CONTRACT_INVALID`; evaluation-unit status `SCOREABLE`.
+- Invalid-unit reasons: none
+- Ready for scoring: yes
+- Ready for freeze: yes
 
 ## Human review instructions
 
-Independent review remains outstanding. It should assess the proposed state, admissible set, and rationale without policy outputs and must remain distinct from the recorded owner review. The unresolved disagreement requires adjudication before that evaluation unit can become coherent.
+Owner review is complete for all 12 current candidates, including replacement `v2_scenario_012`. Independent review remains outstanding and must assess the proposed state, admissible set, and rationale without policy outputs. Any future disagreement would require separate adjudication.
 
 ## Interpretation boundary
 

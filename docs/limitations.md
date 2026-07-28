@@ -10,7 +10,7 @@
 - Frozen inputs can reproduce byte-identical JSONL and Markdown artifacts offline.
 - Two evaluator-only comparisons can validate singleton authority interventions and identify a unique-tool flip or unique-to-multiple state change.
 - Decisiveness for the admissibility relation can remain separate from per-tool incompatibility witnesses.
-- An isolated v2 layer can cross-check proposed input, output/evidence, and explicit-prohibition expectations without exposing them to the relation checker.
+- An isolated v2 layer can cross-check proposed input, output/evidence, explicit-prohibition, and required-tool expectations without exposing them to the relation checker.
 - Review, adjudication, contract invalidity, evaluation-unit invalidity, and freeze readiness can remain distinct deterministic fields.
 
 ## What the current milestones do not demonstrate
@@ -25,14 +25,14 @@
 - a general ontology of task or tool requirements;
 - minimality or individual causality for multi-clause interventions;
 - v2 counterfactual semantics for any clause other than the frozen v1 `authority.requirement` analyzer;
-- independent human review or adjudication of the 12 v2 candidates;
+- independent human review or adjudication of the 12 current v2.1 candidates;
 - a frozen v2 benchmark or policy-comparison result.
 
 ## Coverage limits
 
 The frozen v1 policy-visible bundle remains exactly one fictional evidence-retrieval family with four authority-profile variants. Capability and citation fields are intentionally held constant so authority is decisive. Milestone 2A reuses those scenarios and adds only two evaluator-only comparison specifications.
 
-The separate v2 review candidate contains exactly three fictional enterprise knowledge-work families and 12 cases: four input-profile cases, four output/evidence-profile cases, and four explicit-prohibition cases. The owner review accepted 11 proposals and disputed one. `v2_scenario_012` remains an unadjudicated conflict: the checker and proposal treat an unavailable forbidden ID as `CONTRACT_INVALID`, while the owner review judges the prohibition redundant and both available tools admissible. This is authoring and validation coverage, not benchmark evidence.
+The separate v2.1 review candidate contains exactly three fictional enterprise knowledge-work families and 12 cases: four input-profile cases, four output/evidence-profile cases, and four explicit-prohibition cases. All 12 current proposals have owner agreement. The original `v2_scenario_012` treated an unavailable forbidden ID as contract-invalid; owner review legitimately disputed that ontology rule, so the case was replaced rather than adjudicated in place. The replacement explicitly requires and forbids the same available tool, and the owner approved that contradiction as `CONTRACT_INVALID`. This is authoring and validation coverage, not benchmark evidence.
 
 The owner accepted the logical relation for `v2_scenario_007` but noted that its `verified_transcript` requirement is somewhat artificial for the stated knowledge-packet task. That nonblocking ecological-validity concern should be reconsidered before any claim-grade freeze.
 
@@ -47,8 +47,8 @@ The checked-in decisions are a trusted replay chosen to exercise mechanics. They
 - `CONTRACT_INVALID` is an intentional policy-visible defect. `EVALUATION_UNIT_INVALID` is a defective fixture/oracle relationship. They cannot be relabeled interchangeably after observing output.
 - A malformed stored replay row is structurally invalid before scoring; per-case `MALFORMED` represents a normalized observation at an adapter boundary.
 - The v2 input and output pairs are controlled in their authoring design, but the v1 counterfactual analyzer cannot validate them and no v2 counterfactual finding is claimed.
-- Owner agreement makes 11 rows individually ready under the current lifecycle mechanics, but it does not make the bundle independently reviewed or freeze-ready.
-- The unadjudicated `v2_scenario_012` disagreement is `EVALUATION_UNIT_INVALID` and cannot enter scoring or freeze.
+- Owner agreement makes all 12 rows individually ready for scoring and row-level freeze under the current lifecycle mechanics, but it does not make the bundle independently reviewed or frozen.
+- Replacement `v2_scenario_012` is `REVIEW_COMPLETE` and scoreable, while the current invalid-unit register remains empty.
 
 ## System boundary
 
