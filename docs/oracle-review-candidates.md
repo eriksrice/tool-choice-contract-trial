@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-Milestone 2B is a v2.1 `PROVISIONAL_REVIEW_CANDIDATE`. Owner review is complete for all 12 current cases, and all 12 proposals were accepted. Independent review has not been performed, and the bundle is not frozen. This milestone demonstrates versioned clause expansion and an inspectable oracle-authoring workflow; it does not claim independently reviewed oracle truth, a frozen benchmark, or policy performance.
+Milestone 2B is a v2.1 `PROVISIONAL_REVIEW_CANDIDATE`. Owner review is complete for all 12 current cases, and all 12 proposals were accepted. A separate blind independent model review found 12/12 full agreement with the owner-reviewed and independently computed relations. Independent human review has not been performed, and the bundle is not frozen. This milestone demonstrates versioned clause expansion and inspectable oracle-authoring and evidence-integration workflows; it does not claim human-validated oracle truth, a frozen benchmark, or policy performance.
 
 The v2 artifact layer is isolated from the frozen Milestone 1 and Milestone 2A v1 artifacts. `PolicyViewV2` contains only an opaque scenario ID, a `TaskContractV2`, and available `ToolManifestV2` records. Family labels, variant labels, proposed answers, rationales, reviews, and adjudication fields remain evaluator-only.
 
@@ -49,9 +49,19 @@ Codex-authored expectations remain explicitly `PROPOSED`. The checked-in records
 - zero `PENDING` records;
 - zero current `DISAGREE` or `ADJUDICATED` records.
 
-The owner review does not count as independent review. All 12 coherent agreements are row-level ready for scoring and freeze under the lifecycle mechanics, but the bundle remains provisional and unfrozen. Replacement `v2_scenario_012` is `REVIEW_COMPLETE`; its required-and-forbidden-tool contradiction was approved during owner re-review.
+The owner review does not count as independent human review. All 12 coherent owner agreements are row-level ready for scoring and freeze under the lifecycle mechanics, but the bundle remains provisional and unfrozen. Replacement `v2_scenario_012` is `REVIEW_COMPLETE`; its required-and-forbidden-tool contradiction was approved during owner re-review.
 
 The owner also accepted `v2_scenario_007` while noting a nonblocking ecological-validity concern: `verified_transcript` is somewhat artificial for the stated knowledge-packet task and should be reconsidered before any claim-grade freeze.
+
+## Blind independent model-review evidence
+
+The additive `BLIND_INDEPENDENT_MODEL_REVIEW` layer is distinct from `OracleReviewRecordV2` and leaves every owner record unchanged. The reviewer used ChatGPT in a Temporary Chat; the exact model identifier was not recorded, and no human reviewer participated. The reviewer received only a shuffled blind policy-visible packet with per-case aliased tool IDs. Oracle expectations, computed findings, owner-review records, the owner provisional manifest, repository history, policy outputs, and the private case map were withheld. The public bundle contains the exact reviewed packet, exact raw response, exact protocol, canonical unblinded records, three-way comparisons, a provenance manifest with source hashes, and a pure Markdown report.
+
+The reversible private case map and private source manifest remain unpublished. A public clone can verify the packet, raw response, protocol, canonical artifacts, provenance, report rendering, and consistency with owner and computed repository evidence. It cannot independently repeat the original alias reversal; the published provenance provides cryptographic commitments to the two retained private files rather than public access to them.
+
+All 12 model-review records report `HIGH` confidence and no semantic ambiguity. All 12 state, admissible-set, and decision relations fully agree with both owner-reviewed values and the source-verified computed relation. Every record preserves its ecological-validity flag and note. Eleven notes express one bundle-level limitation—that synthetic, self-declared manifests are not runtime-verified—rather than eleven distinct case defects. Scenario 007 separately flags the artificiality of `verified_transcript` for the stated task, and scenario 012 flags the diagnostic but intentional artificiality of the contradictory contract. These concerns do not alter relation agreement or evaluation-unit validity.
+
+See the canonical [blind independent model-review report](../fixtures/milestone_2b/blind_model_review_001/comparison_report.md), [review protocol](../fixtures/milestone_2b/blind_model_review_001/review_protocol.md), [reviewed packet](../fixtures/milestone_2b/blind_model_review_001/source_evidence/blind_review_packet.md), and [raw response](../fixtures/milestone_2b/blind_model_review_001/source_evidence/raw_model_review_response.jsonl).
 
 ## Invalidity boundary
 
@@ -71,6 +81,6 @@ Schema validation alone does not make a loaded finding or manifest trusted. Befo
 
 ## Human review gate
 
-Before any v2 freeze decision, independent review must inspect every scenario without policy outputs. Any resulting disagreement would require separate adjudication. The completed owner reviews are not a substitute for independent review. Policy comparison, v2 counterfactual validation, broader scenario coverage, live-model evaluation, benchmark scaling, and Milestone 3 require separate authorization.
+Before any v2 freeze decision, independent human review must inspect every scenario without policy outputs. Any resulting disagreement would require separate adjudication. Neither the completed owner reviews nor the blind independent model review substitutes for independent human review. Policy comparison, v2 counterfactual validation, broader scenario coverage, live-model evaluation, benchmark scaling, and Milestone 3 require separate authorization.
 
 Run and byte-compare the candidate using [Reproducibility](reproducibility.md). The wider interpretation boundary is documented in [Limitations](limitations.md).

@@ -116,7 +116,7 @@ def test_v2_review_packet_and_manifest_state_the_review_boundary(tmp_path: Path)
     assert "Owner review: complete for all 12 current candidates" in report
     assert "12 proposals accepted" in report
     assert "The replacement `v2_scenario_012` contradiction was approved" in report
-    assert "Independent review has not been performed" in report
+    assert "Independent human review has not been performed" in report
     assert "The bundle is not frozen" in report
     assert "Artifact schema versions: `2.1.0`" in report
     assert "CONTRACT_INVALID" in report

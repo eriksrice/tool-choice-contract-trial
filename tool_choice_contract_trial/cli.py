@@ -6,6 +6,9 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+from .blind_model_review import build_blind_model_review_evidence_v2
+from .blind_model_review_io import write_blind_model_review_provenance_manifest_v2
+from .blind_model_review_reporting import write_blind_model_review_report_v2
 from .counterfactual import analyze_counterfactuals
 from .counterfactual_io import load_counterfactual_specs
 from .counterfactual_reporting import write_counterfactual_markdown_report
@@ -20,7 +23,9 @@ from .serialization import write_jsonl
 from .v2_io import (
     load_oracle_expectations_v2,
     load_oracle_reviews_v2,
+    load_oracle_validation_findings_v2,
     load_policy_views_v2,
+    load_provisional_manifest_v2,
 )
 from .v2_reporting import write_oracle_review_packet_v2
 from .v2_schema import check_v2_schema_drift, generate_v2_schemas
@@ -78,6 +83,22 @@ def _build_parser() -> argparse.ArgumentParser:
     validate_v2.add_argument("--report", type=_path, required=True)
     validate_v2.add_argument("--manifest", type=_path, required=True)
     validate_v2.add_argument("--invalid-unit-register", type=_path, required=True)
+
+    integrate_blind_review = subparsers.add_parser("integrate-blind-model-review")
+    integrate_blind_review.add_argument("--scenarios", type=_path, required=True)
+    integrate_blind_review.add_argument("--expectations", type=_path, required=True)
+    integrate_blind_review.add_argument("--owner-reviews", type=_path, required=True)
+    integrate_blind_review.add_argument("--owner-findings", type=_path, required=True)
+    integrate_blind_review.add_argument("--owner-manifest", type=_path, required=True)
+    integrate_blind_review.add_argument("--blind-packet", type=_path, required=True)
+    integrate_blind_review.add_argument("--blind-responses", type=_path, required=True)
+    integrate_blind_review.add_argument("--review-protocol", type=_path, required=True)
+    integrate_blind_review.add_argument("--private-case-map", type=_path, required=True)
+    integrate_blind_review.add_argument("--private-source-manifest", type=_path, required=True)
+    integrate_blind_review.add_argument("--records", type=_path, required=True)
+    integrate_blind_review.add_argument("--comparisons", type=_path, required=True)
+    integrate_blind_review.add_argument("--provenance", type=_path, required=True)
+    integrate_blind_review.add_argument("--report", type=_path, required=True)
     return parser
 
 
@@ -161,6 +182,38 @@ def _validate_oracle_candidates_v2(args: argparse.Namespace) -> None:
     write_invalid_unit_register_v2(args.invalid_unit_register, findings)
 
 
+def _integrate_blind_model_review_v2(args: argparse.Namespace) -> None:
+    policy_views = load_policy_views_v2(args.scenarios)
+    expectations = load_oracle_expectations_v2(args.expectations)
+    owner_reviews = load_oracle_reviews_v2(args.owner_reviews)
+    owner_findings = load_oracle_validation_findings_v2(args.owner_findings)
+    owner_manifest = load_provisional_manifest_v2(args.owner_manifest)
+    evidence = build_blind_model_review_evidence_v2(
+        scenarios_path=args.scenarios,
+        policy_views=policy_views,
+        expectations=expectations,
+        owner_reviews=owner_reviews,
+        owner_findings=owner_findings,
+        owner_findings_path=args.owner_findings,
+        owner_manifest=owner_manifest,
+        owner_manifest_path=args.owner_manifest,
+        blind_packet_path=args.blind_packet,
+        raw_review_path=args.blind_responses,
+        review_protocol_path=args.review_protocol,
+        private_case_map_path=args.private_case_map,
+        private_source_manifest_path=args.private_source_manifest,
+    )
+    write_jsonl(args.records, evidence.records)
+    write_jsonl(args.comparisons, evidence.comparisons)
+    write_blind_model_review_provenance_manifest_v2(args.provenance, evidence.provenance)
+    write_blind_model_review_report_v2(
+        args.report,
+        evidence.records,
+        evidence.comparisons,
+        evidence.provenance,
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "generate-schemas":
@@ -179,4 +232,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         _analyze_counterfactuals(args)
     elif args.command == "validate-oracle-candidates":
         _validate_oracle_candidates_v2(args)
+    elif args.command == "integrate-blind-model-review":
+        _integrate_blind_model_review_v2(args)
     return 0
