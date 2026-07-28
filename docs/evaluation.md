@@ -107,11 +107,11 @@ An unavailable ID in `forbidden_tool_ids` is a schema-valid semantic defect. The
 The validator computes every relation first, then compares it with the proposal and review:
 
 - a matching proposal with `PENDING` review is scoreable as an artifact relationship but remains `PENDING_REVIEW`, `ready_for_scoring=false`, and `ready_for_freeze=false`;
-- a completed agreement is coherent only when the proposal, reviewed values, and independent relation agree and policy-output independence was recorded;
+- a completed agreement is coherent only when the proposal, reviewed values, and independently computed relation agree and policy-output independence was recorded;
 - a completed disagreement without adjudication is `EVALUATION_UNIT_INVALID`;
 - an adjudication is coherent only when both adjudicated values are present and match the independent relation;
 - missing, contradictory, or malformed linkage is either a visible invalid-unit finding or a hard artifact-integrity failure.
 
 One pure lifecycle derivation is authoritative for match flags, review readiness, evaluation-unit status, invalid reasons, and row-level scoring/freeze readiness. Persisted findings carry the review evidence and available-tool provenance needed to reject contradictory serialized states. Before a finding or provisional manifest is used as evidence, source-aware verification recomputes the relation, witnesses, hashes, lifecycle, and manifest contents from the original scenario, expectation, and review artifacts.
 
-`CONTRACT_INVALID` describes the policy-visible task contract and can become ready once coherently reviewed. `EVALUATION_UNIT_INVALID` describes a defective expectation, review, adjudication, or artifact relationship and must not enter policy metrics. The checked-in v2 bundle evaluates no policy and contains no policy decisions. See [Oracle review candidates](oracle-review-candidates.md).
+`CONTRACT_INVALID` describes the policy-visible task contract and can become ready once coherently reviewed. `EVALUATION_UNIT_INVALID` describes a defective expectation, review, adjudication, or artifact relationship and must not enter policy metrics. The checked-in owner review accepts 11 proposals and disputes `v2_scenario_012`; that unresolved disagreement is `ADJUDICATION_REQUIRED` and `EVALUATION_UNIT_INVALID`. Independent review has not occurred. The v2 bundle evaluates no policy and contains no policy decisions. See [Oracle review candidates](oracle-review-candidates.md).

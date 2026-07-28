@@ -107,7 +107,7 @@ for artifact in \
 done
 ```
 
-The checked-in invalid-unit register is intentionally empty because the 12 public candidates contain no accidental benchmark defects. Focused tests exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
+The checked-in invalid-unit register contains exactly `v2_scenario_012`, whose owner-review disagreement remains unadjudicated. Focused tests also exercise mismatches, missing rows, contradictory completed reviews, incomplete adjudication, duplicate rows, and malformed linkage.
 
 ## Offline frozen replay
 
@@ -168,10 +168,10 @@ For the frozen Milestone 1 replay and representative Milestone 2A comparisons:
 | `tests/golden/report.md` | `ae9ef0d081c041edd2f1c3ff2b9714429da4ff5a12cd9036cba2761b664a5fdc` |
 | `tests/golden/counterfactual_findings.jsonl` | `66904942d30c3bc413020304c29df76bf99e6c9ce912b31df0cc5a7b8d6c19bb` |
 | `tests/golden/counterfactual_report.md` | `e050cf19b4f8e78235bdf6c0f8fce09e43a5dab464f2e06e2ec7e15be196e868` |
-| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `16d68272edd53d112863d8b43eff76c15578852c74208633557c56ff79db836d` |
-| `tests/golden/milestone_2b/oracle_review_packet.md` | `2f0c014fcfa4d73c259f439ef3c4ff4b10ea31e3dae15df1fcda2ec7b7e42f31` |
-| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `8668d077f7947f26f62eec00df5772b3b1b687b1b8283f850fe8d4dc6d02b888` |
-| `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `tests/golden/milestone_2b/oracle_validation_findings.jsonl` | `cffd01549ca6053b064004a3467088b8abdd5ada02d333814a7f026d91c69a10` |
+| `tests/golden/milestone_2b/oracle_review_packet.md` | `ba581891fdd4f051a63433bc9194c33b765d6a4dc777326fdf9f8f2f729811cc` |
+| `tests/golden/milestone_2b/provisional_bundle_manifest.json` | `6704e3b833497ede5dee20f06a9a1dc7a336ec38d73b80e9510976cee19c7e77` |
+| `tests/golden/milestone_2b/invalid_unit_register.jsonl` | `4c5c0e8e5b9e6f4802a11c3a0bf503f4dc8126856b3f0c7421dfec5eb5ea92b2` |
 
 The result bundle contains hashes of each scenario, metadata row, oracle row, and decision row. It deliberately contains no timestamps or absolute paths.
 
@@ -184,7 +184,7 @@ The result bundle contains hashes of each scenario, metadata row, oracle row, an
 - every JSONL record has exactly one trailing newline;
 - the report renderer reads only the validated result bundle;
 - the counterfactual report renderer reads only the validated finding bundle;
-- the v2 review packet reads only validated scenarios, proposed expectations, findings, and the provisional manifest;
+- the v2 review packet reads only validated scenarios, proposed expectations, reviews, findings, and the provisional manifest;
 - comparison and scenario rows are ordered by opaque IDs, while tool catalogs are compared canonically by tool ID;
 - the provisional manifest covers scenario, expectation, review, finding, bundle, and relation-registry hashes;
 - persisted findings and manifests are source-verified against scenarios, expectations, reviews, and independently recomputed relations before report rendering;

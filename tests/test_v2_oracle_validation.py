@@ -64,6 +64,15 @@ def _replace_review(
     )
 
 
+def _pending_review(scenario_id: str) -> OracleReviewRecordV2:
+    return OracleReviewRecordV2(
+        scenario_id=scenario_id,
+        reviewer_role="independent_reviewer",
+        disposition=OracleReviewDispositionV2.PENDING,
+        review_notes="Test-only pending review.",
+    )
+
+
 def _unique_mismatch(expectation: OracleExpectationV2) -> OracleExpectationV2:
     return OracleExpectationV2.model_validate(
         expectation.model_copy(
@@ -111,7 +120,9 @@ def test_pending_matching_proposals_remain_pending_and_not_freeze_ready(
         tuple[OracleReviewRecordV2, ...],
     ],
 ) -> None:
-    findings = validate_oracle_candidates_v2(*v2_bundle)
+    views, expectations, reviews = v2_bundle
+    pending_reviews = tuple(_pending_review(review.scenario_id) for review in reviews)
+    findings = validate_oracle_candidates_v2(views, expectations, pending_reviews)
 
     assert len(findings) == 12
     assert all(finding.expectation_matches_relation for finding in findings)
@@ -131,6 +142,7 @@ def test_proposed_admissible_set_mismatch_is_visible_but_pending_review_remains_
 ) -> None:
     views, expectations, reviews = v2_bundle
     changed = _unique_mismatch(expectations[0])
+    reviews = _replace_review(reviews, _pending_review("v2_scenario_001"))
     finding = validate_oracle_candidates_v2(
         views,
         _replace_expectation(expectations, changed),
@@ -303,7 +315,8 @@ def test_contract_invalid_remains_distinct_from_invalid_evaluation_unit(
     ],
 ) -> None:
     views, expectations, reviews = v2_bundle
-    pending = validate_oracle_candidates_v2(views, expectations, reviews)[-1]
+    pending_reviews = _replace_review(reviews, _pending_review("v2_scenario_012"))
+    pending = validate_oracle_candidates_v2(views, expectations, pending_reviews)[-1]
     review = OracleReviewRecordV2(
         scenario_id="v2_scenario_012",
         reviewer_role="independent_reviewer",
@@ -398,7 +411,9 @@ def test_pending_finding_cannot_claim_readiness(
         tuple[OracleReviewRecordV2, ...],
     ],
 ) -> None:
-    finding = validate_oracle_candidates_v2(*v2_bundle)[0]
+    views, expectations, reviews = v2_bundle
+    pending_reviews = _replace_review(reviews, _pending_review("v2_scenario_001"))
+    finding = validate_oracle_candidates_v2(views, expectations, pending_reviews)[0]
     payload = finding.model_dump(mode="json")
     payload[readiness_field] = True
 

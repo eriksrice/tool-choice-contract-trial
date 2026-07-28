@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,14 @@ from tool_choice_contract_trial.v2_io import (
     load_policy_views_v2,
     load_provisional_manifest_v2,
 )
-from tool_choice_contract_trial.v2_models import BundleStatusV2, PolicyViewV2
+from tool_choice_contract_trial.v2_models import (
+    BundleStatusV2,
+    EvaluationUnitStatusV2,
+    OracleReviewDispositionV2,
+    OracleStateV2,
+    PolicyViewV2,
+    ReviewReadinessV2,
+)
 from tool_choice_contract_trial.v2_reporting import render_oracle_review_packet_v2
 from tool_choice_contract_trial.v2_schema import (
     V2_SCHEMA_MODELS,
@@ -100,24 +108,64 @@ def test_v2_review_packet_is_a_pure_validated_bundle_projection(tmp_path: Path) 
 def test_v2_review_packet_and_manifest_state_the_review_boundary(tmp_path: Path) -> None:
     outputs = _run_cli(tmp_path)
     report = outputs["report"].read_text()
+    reviews = load_oracle_reviews_v2(FIXTURES / "oracle_reviews.jsonl")
+    findings = load_oracle_validation_findings_v2(outputs["findings"])
     manifest = load_provisional_manifest_v2(outputs["manifest"])
+    invalid_rows = [json.loads(line) for line in outputs["invalid"].read_text().splitlines()]
 
-    assert "not independently reviewed, adjudicated, or frozen" in report
+    assert "Owner review: complete for all 12 cases" in report
+    assert "11 proposals accepted and 1 disputed" in report
+    assert "1 dispute remains unadjudicated" in report
+    assert "Independent review has not been performed" in report
+    assert "The bundle is not frozen" in report
     assert "CONTRACT_INVALID" in report
     assert "EVALUATION_UNIT_INVALID" in report
-    assert "No policy decisions" in report
+    assert "no policy decisions were used" in report
     assert "have not been processed by the v1 authority-only counterfactual analyzer" in report
-    assert "all 12 checked-in reviews are pending" in report
     assert "Authoring rationale" in report
     assert "capabilities" in report
     assert "authority" in report
     assert "Relation witnesses" in report
     assert "forbidden tool ID is unavailable: v2_tool_099" in report
+    assert "Reviewer role: `owner_reviewer`" in report
+    assert "Reviewed relation:" in report
+    assert "Review performed without policy outputs: yes" in report
+    assert "Adjudication: none" in report
+    assert reviews[-1].review_notes in report
+
+    assert sum(row.disposition is OracleReviewDispositionV2.AGREE for row in reviews) == 11
+    assert sum(row.disposition is OracleReviewDispositionV2.DISAGREE for row in reviews) == 1
+    assert not any(row.disposition is OracleReviewDispositionV2.PENDING for row in reviews)
+    assert all(row.reviewer_role == "owner_reviewer" for row in reviews)
+    assert all(row.review_performed_without_policy_outputs is True for row in reviews)
+    assert all(row.adjudicated_state is None for row in reviews)
+    assert all(row.adjudicated_admissible_tool_ids is None for row in reviews)
+
+    accepted = findings[:-1]
+    disputed = findings[-1]
+    assert all(row.review_readiness is ReviewReadinessV2.REVIEW_COMPLETE for row in accepted)
+    assert all(row.evaluation_unit_status is EvaluationUnitStatusV2.SCOREABLE for row in accepted)
+    assert all(row.ready_for_scoring and row.ready_for_freeze for row in accepted)
+    assert disputed.scenario_id == "v2_scenario_012"
+    assert disputed.computed_oracle_state is OracleStateV2.CONTRACT_INVALID
+    assert disputed.reviewed_expected_state is OracleStateV2.MULTIPLE_ADMISSIBLE
+    assert disputed.reviewed_admissible_tool_ids == ("v2_tool_005", "v2_tool_006")
+    assert disputed.review_readiness is ReviewReadinessV2.ADJUDICATION_REQUIRED
+    assert disputed.evaluation_unit_status is EvaluationUnitStatusV2.INVALID
+    assert not disputed.ready_for_scoring
+    assert not disputed.ready_for_freeze
+
     assert manifest.bundle_status is BundleStatusV2.PROVISIONAL_REVIEW_CANDIDATE
-    assert manifest.pending_review_count == 12
-    assert manifest.invalid_unit_count == 0
+    assert manifest.pending_review_count == 0
+    assert manifest.invalid_unit_count == 1
     assert manifest.contract_invalid_count == 1
-    assert outputs["invalid"].read_bytes() == b""
+    assert manifest.computed_state_counts.model_dump() == {
+        "unique_admissible": 6,
+        "multiple_admissible": 2,
+        "no_admissible": 3,
+        "contract_invalid": 1,
+    }
+    assert [row["scenario_id"] for row in invalid_rows] == ["v2_scenario_012"]
 
 
 def test_loaded_findings_round_trip_through_source_aware_verification(tmp_path: Path) -> None:

@@ -39,7 +39,7 @@ flowchart LR
     F --> G["Pure counterfactual Markdown"]
 
     V2["PolicyViewV2: v2 contract + manifests"] --> C2["Independent v2 relation checker"]
-    H["Proposed expectations + pending reviews"] --> Q2["Validation + review layer"]
+    H["Proposed expectations + owner reviews"] --> Q2["Validation + review layer"]
     C2 --> Q2
     Q2 --> K["Findings + provisional manifest"]
     K --> L["Pure review packet"]
@@ -120,7 +120,7 @@ uv run --frozen python -m tool_choice_contract_trial validate-oracle-candidates 
   --invalid-unit-register artifacts/oracle_review/invalid_unit_register.jsonl
 ```
 
-All 12 checked-in expectations currently match the independent relation computation, but all 12 review records remain `PENDING`. The bundle is therefore a `PROVISIONAL_REVIEW_CANDIDATE`, not independently reviewed or frozen. See [Oracle review candidates](docs/oracle-review-candidates.md).
+The owner reviewed all 12 candidates without policy outputs: 11 proposed expectations were accepted, while `v2_scenario_012` was disputed and remains unadjudicated. Independent review has not been performed, no policy decisions are evaluated, and the bundle remains an unfrozen `PROVISIONAL_REVIEW_CANDIDATE`. See [Oracle review candidates](docs/oracle-review-candidates.md).
 
 ## Verification commands
 
@@ -154,7 +154,7 @@ The last row is intentionally not grouped with inadmissible selection: the selec
 tool_choice_contract_trial/   Authoritative models, evaluation, I/O, CLI, reporting
 fixtures/milestone_1/         Four policy-visible, metadata, oracle, and replay bundles
 fixtures/milestone_2a/        Evaluator-only comparison specifications over M1 scenarios
-fixtures/milestone_2b/        Twelve v2 scenarios, proposals, and pending reviews
+fixtures/milestone_2b/        Twelve v2 scenarios, proposals, and owner-review records
 schemas/v1/                   Frozen v1 deterministic JSON Schema projections
 schemas/v2/                   Isolated v2 deterministic JSON Schema projections
 tests/                        Unit, boundary, integrity, schema, and replay tests
@@ -184,15 +184,15 @@ docs/                         Public architecture, semantics, reproducibility, l
 - Trusted adapters are protected against accidental oracle leakage by architecture, not sandboxed against malicious code.
 - Schema v1 has no typed tie-break language, and Milestone 1 decisive-clause semantics remain intentionally family-specific.
 - Milestone 2A supports only singleton `authority.requirement` comparisons over the existing family; it does not establish multi-clause minimality.
-- Milestone 2B expectations have not been independently reviewed or frozen, and no policy decisions are evaluated against them.
+- Milestone 2B has an owner review with 11 agreements and one unadjudicated disagreement; it has not been independently reviewed or frozen, and no policy decisions are evaluated against it.
 - The v2 controlled pairs have not been processed by the v1-only Milestone 2A counterfactual analyzer.
 
 See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 ## Bounded roadmap
 
-1. **Current:** preserve frozen Milestone 1 and 2A artifacts while presenting the v2 oracle candidates for independent human review.
-2. **Next design gate:** adjudicate any review disagreements and decide whether the candidate is suitable to freeze.
+1. **Current:** preserve frozen Milestone 1 and 2A artifacts while exposing the completed owner review and its unresolved `v2_scenario_012` disagreement.
+2. **Next design gate:** obtain independent human review, adjudicate the disagreement, and decide whether the candidate is suitable to freeze.
 3. **Only after a separate scope review:** consider v2 counterfactual analysis, policy comparison, or broader synthetic coverage without weakening the policy/evaluator boundary.
 
 ## Claim boundary
