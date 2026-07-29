@@ -6,9 +6,9 @@
 
 Tool selection is often treated as a similarity problem. This project treats it as a **contract problem**.
 
-A tool can share the right topic and capability while still be invalid because it uses the wrong authority, cannot accept the required input, cannot produce the required output, lacks required citations, is prohibited, or is not the required tool. Tool Choice Contract Trial represents those requirements explicitly, computes the admissible tool set independently of the policy, and returns clause-level diagnostics instead of a vague pass/fail score.
+A tool can share the right topic and capability while still being invalid because it uses the wrong authority, cannot accept the required input, cannot produce the required output, lacks required citations, is prohibited, or is not the required tool. Tool Choice Contract Trial represents those requirements explicitly, computes the admissible tool set independently of the policy, and returns clause-level diagnostics instead of a vague pass/fail score.
 
-**Project status:** portfolio-ready research prototype. Milestone 1 and Milestone 2A are frozen. The v2.1 candidate has 12/12 owner agreement and 12/12 blinded model-review agreement, but remains provisional, unfrozen, and not independently human-validated.
+**Project status:** portfolio-ready research prototype. Milestone 1 and Milestone 2A are frozen. The v2.1 candidate has 12/12 owner agreement and 12/12 agreement in a blinded independent model review, but remains provisional, unfrozen, and not independently human-validated.
 
 ## Representative failure
 
