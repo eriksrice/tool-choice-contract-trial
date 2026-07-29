@@ -1,14 +1,48 @@
 # Tool Choice Contract Trial
 
-**Status: Milestone 2B Review Candidate — Active Development**
+> **Contract-aware evaluation for tool-using AI systems.**
+>
+> A replayable harness that detects when an AI system chooses a tool that looks relevant but violates the task's actual requirements.
 
-Tool Choice Contract Trial is a replayable evaluation harness for one narrow question: does a recorded policy decision respect an explicit task contract and the declared manifests of the available tools? Milestone 1 makes that comparison inspectable; Milestone 2A separately validates declared counterfactual interventions over its frozen authority family. Milestone 2B adds an isolated v2.1 review candidate for input, output/evidence, explicit-prohibition, and required-tool clauses, with proposed human-authored expectations cross-checked against an independent deterministic relation computation and a separate blind independent model review.
+Tool selection is often treated as a similarity problem. This project treats it as a **contract problem**.
 
-In tool-using AI systems, a tool can be topically relevant yet invalid because it cannot satisfy required authority, freshness, data-boundary, input, or output conditions.
+A tool can share the right topic and capability while still being invalid because it uses the wrong authority, cannot accept the required input, cannot produce the required output, lacks required citations, is prohibited, or is not the required tool. Tool Choice Contract Trial represents those requirements explicitly, computes the admissible tool set independently of the policy, and returns clause-level diagnostics instead of a vague pass/fail score.
 
-## Failure mode under test
+**Project status:** portfolio-ready research prototype. Milestone 1 and Milestone 2A are frozen. The v2.1 candidate has 12/12 owner agreement and 12/12 agreement in a blinded independent model review, but remains provisional, unfrozen, and not independently human-validated.
 
-A choice can look semantically plausible while still violating a decisive contract condition. In the included synthetic family, every tool advertises the same broad evidence-retrieval capability and citation behavior. Their declared authority profiles differ. That makes it possible to test whether a policy respects the authority requirement instead of stopping at top-level capability overlap.
+## Representative failure
+
+In `scenario_001`, the task requires cited evidence from a `public_primary` authority. The stored policy selects `evidence_tool_02`.
+
+| Question | Answer |
+| --- | --- |
+| Why does the choice look plausible? | The tool advertises `evidence_retrieval` and provides citations. |
+| Why is it invalid? | Its manifest declares only `approved_internal` authority. |
+| What does the harness return? | `INADMISSIBLE` selection, `INCORRECT` strict outcome, and `F_AUTHORITY_MISMATCH`. |
+| What made the clause decisive? | The accepted authority profile is the only controlled contract difference in the paired cases. |
+
+The complete representative output is checked in as [JSONL](tests/golden/results.jsonl) and a [Markdown report](tests/golden/report.md).
+
+## What this repository demonstrates
+
+- **Typed behavioral contracts:** task and tool requirements cover authority, capability, input, output, citations, explicit prohibition, and required-tool identity.
+- **Set-valued evaluation:** unique, multiple, none, contract-invalid, and evaluation-unit-invalid states remain distinct instead of being forced into a single-answer accuracy score.
+- **Non-circular evidence:** policy-visible inputs are separated from deterministic relation computation, oracle evidence, review artifacts, and counterfactual analysis.
+- **Actionable diagnostics:** failures are tied to specific clauses, expected values, actual values, and stable failure codes.
+- **Reproducible engineering:** canonical artifacts, offline replay, deterministic JSON Schema, GitHub Actions, and 207 automated tests.
+- **Review discipline:** the v2.1 candidate achieved 12/12 agreement across owner review, deterministic computation, and a blinded independent model review, while remaining explicitly provisional rather than being overstated as benchmark truth.
+
+## Start here
+
+| Goal | Best entry point |
+| --- | --- |
+| Understand the project in two minutes | This README, especially the representative failure and result excerpt |
+| Inspect the system design | [Architecture](docs/architecture.md) |
+| Audit the evaluation logic | [Evaluation semantics](docs/evaluation.md) |
+| Review the counterfactual methodology | [Counterfactual clause semantics](docs/counterfactual-semantics.md) |
+| Inspect the blinded review evidence | [Blind model-review comparison](fixtures/milestone_2b/blind_model_review_001/comparison_report.md) |
+| Reproduce the artifacts | [Quick start](#quick-start) and [Reproducibility](docs/reproducibility.md) |
+| Check the claim boundary | [Current limitations](#current-limitations) and [Limitations](docs/limitations.md) |
 
 The harness evaluates declared manifest compatibility. It does not execute tools or verify that runtime behavior matches a manifest.
 
@@ -63,21 +97,6 @@ Milestone 1 contains exactly one fictional enterprise evidence-retrieval family 
 | Public or approved internal, no tie-break | either profile | `MULTIPLE_ADMISSIBLE` | `INDETERMINATE` |
 
 The first two rows form a minimal pair: changing only the accepted authority profile flips the unique admissible tool. Milestone 2A formalizes and validates that comparison rather than inferring decisiveness from an incompatibility witness.
-
-## Plausible but inadmissible example
-
-In `scenario_001`, the task requires cited evidence from a `public_primary` authority. The stored policy selects `evidence_tool_02`. That tool looks plausible because it advertises `evidence_retrieval` and citations, but its manifest declares only `approved_internal` authority.
-
-The result therefore records:
-
-- selected-tool admissibility: `INADMISSIBLE`;
-- strict outcome: `INCORRECT`;
-- decisive clause: `authority.requirement`;
-- primary failure: `F_AUTHORITY_MISMATCH`;
-- expected authority: `public_primary`;
-- actual authority: `approved_internal`.
-
-The complete representative output is checked in as [JSONL](tests/golden/results.jsonl) and a [Markdown report](tests/golden/report.md).
 
 ## Quick start
 
