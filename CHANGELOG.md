@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Project naming
+
+- rename the public project and repository to Tool Choice Contract Evaluator while preserving the existing Python distribution, import package, frozen artifacts, and provenance-bound evidence.
+
 ### Milestone 2B
 
 - revise the isolated candidate from `2.0.0` to `2.1.0` without a migration framework or mixed-version bundles;

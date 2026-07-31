@@ -1,7 +1,7 @@
 [project]
 name = "tool-choice-contract-trial"
 version = "0.1.0"
-description = "Deterministic tool-choice admissibility evaluation harness"
+description = "Contract-aware evaluation harness for diagnosing invalid tool selection in AI systems."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "pydantic>=2.12,<3",

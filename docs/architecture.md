@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Tool Choice Contract Trial evaluates whether a recorded policy decision is admissible under an explicit task contract and a set of declared tool manifests. Milestone 2A also validates evaluator-only counterfactual comparisons between existing v1 scenarios. Milestone 2B adds a separate v2 path that computes admissibility before comparing it with proposed expectations and owner-review records, plus an additive blind independent model-review evidence path. Every path is local and deterministic: typed files enter, validated artifacts leave, and no tool is executed.
+Tool Choice Contract Evaluator evaluates whether a recorded policy decision is admissible under an explicit task contract and a set of declared tool manifests. Milestone 2A also validates evaluator-only counterfactual comparisons between existing v1 scenarios. Milestone 2B adds a separate v2 path that computes admissibility before comparing it with proposed expectations and owner-review records, plus an additive blind independent model-review evidence path. Every path is local and deterministic: typed files enter, validated artifacts leave, and no tool is executed.
 
 ## Components
 
