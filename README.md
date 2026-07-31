@@ -1,4 +1,4 @@
-# Tool Choice Contract Trial
+# Tool Choice Contract Evaluator
 
 > **Contract-aware evaluation for tool-using AI systems.**
 >
@@ -6,7 +6,7 @@
 
 Tool selection is often treated as a similarity problem. This project treats it as a **contract problem**.
 
-A tool can share the right topic and capability while still being invalid because it uses the wrong authority, cannot accept the required input, cannot produce the required output, lacks required citations, is prohibited, or is not the required tool. Tool Choice Contract Trial represents those requirements explicitly, computes the admissible tool set independently of the policy, and returns clause-level diagnostics instead of a vague pass/fail score.
+A tool can share the right topic and capability while still being invalid because it uses the wrong authority, cannot accept the required input, cannot produce the required output, lacks required citations, is prohibited, or is not the required tool. Tool Choice Contract Evaluator represents those requirements explicitly, computes the admissible tool set independently of the policy, and returns clause-level diagnostics instead of a vague pass/fail score.
 
 **Project status:** portfolio-ready research prototype. Milestone 1 and Milestone 2A are frozen. The v2.1 candidate has 12/12 owner agreement and 12/12 agreement in a blinded independent model review, but remains provisional, unfrozen, and not independently human-validated.
 
@@ -223,4 +223,4 @@ See [Limitations](docs/limitations.md) for the full interpretation boundary.
 
 The current version proves frozen v1 evaluation and counterfactual-comparison mechanics on one synthetic authority family, plus deterministic v2 oracle-authoring and blind independent model-review integration mechanics on three proposed synthetic families. It does **not** establish independent human validation of v2 oracle truth, a frozen or broader benchmark, policy-comparison results, production readiness, runtime tool correctness, cross-domain performance, or general policy quality.
 
-Additional technical detail is available in [Evaluation semantics](docs/evaluation.md), [Counterfactual clause semantics](docs/counterfactual-semantics.md), and [Oracle review candidates](docs/oracle-review-candidates.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).
+Additional technical detail is available in [Evaluation semantics](docs/evaluation.md), [Counterfactual clause semantics](docs/counterfactual-semantics.md), and [Oracle review candidates](docs/oracle-review-candidates.md). The public-name change and retained internal identifiers are documented in [Project rename](docs/project-rename.md). Changes for the preview are recorded in [CHANGELOG.md](CHANGELOG.md), and the code is available under the [MIT License](LICENSE).

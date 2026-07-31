@@ -1,4 +1,4 @@
-"""Tool Choice Contract Trial deterministic evaluation package."""
+"""Tool Choice Contract Evaluator deterministic evaluation package."""
 
 from .models import SCHEMA_VERSION
 

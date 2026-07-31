@@ -42,7 +42,7 @@ def _path(value: str) -> Path:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="tool-choice-contract-trial")
+    parser = argparse.ArgumentParser(prog="tool-choice-contract-evaluator")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     generate = subparsers.add_parser("generate-schemas")
